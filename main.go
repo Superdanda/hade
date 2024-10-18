@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/echo/hade/framework/gin"
-	middleware2 "github.com/echo/hade/framework/middleware"
+	"github.com/Superdanda/hade/framework/gin"
+	middleware2 "github.com/Superdanda/hade/framework/middleware"
+	"github.com/Superdanda/hade/provider/demo"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +18,8 @@ func main() {
 
 	core.Use(middleware2.Recovery())
 	core.Use(middleware2.Cost())
+
+	core.Bind(&demo.DemoServiceProvider{})
 
 	registerRouter(core)
 	server := &http.Server{

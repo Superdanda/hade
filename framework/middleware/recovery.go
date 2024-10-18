@@ -1,18 +1,17 @@
 package middleware
 
 import (
-	"github.com/echo/hade/framework"
+	"github.com/Superdanda/hade/framework/gin"
 	"net/http"
 )
 
-func Recovery() framework.ControllerHandler {
-	return func(c *framework.Context) error {
+func Recovery() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				c.SetStatus(http.StatusInternalServerError).Json(err)
+				c.ISetStatus(http.StatusInternalServerError).IJson(err)
 			}
 		}()
 		c.Next()
-		return nil
 	}
 }

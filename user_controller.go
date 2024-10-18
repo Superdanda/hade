@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-
-	"github.com/echo/hade/framework/gin"
+	"github.com/Superdanda/hade/framework/gin"
 	"net/http"
 	"time"
 )

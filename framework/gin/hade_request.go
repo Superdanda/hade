@@ -5,13 +5,6 @@ import (
 	"mime/multipart"
 )
 
-package gin
-
-import (
-"mime/multipart"
-"github.com/spf13/cast"
-)
-
 // const defaultMultipartMemory = 32 << 20 // 32 MB
 
 // 代表请求包含的方法

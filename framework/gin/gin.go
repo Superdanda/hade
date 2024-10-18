@@ -6,6 +6,7 @@ package gin
 
 import (
 	"fmt"
+	"github.com/Superdanda/hade/framework"
 	"html/template"
 	"net"
 	"net/http"
@@ -88,6 +89,9 @@ const (
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
 	RouterGroup
+
+	//新增Hade框架容器
+	container framework.Container
 
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -209,6 +213,7 @@ func New(opts ...OptionFunc) *Engine {
 		secureJSONPrefix:       "while(1);",
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
+		container:              framework.NewHadeContainer(),
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() any {
@@ -237,7 +242,7 @@ func (engine *Engine) Handler() http.Handler {
 func (engine *Engine) allocateContext(maxParams uint16) *Context {
 	v := make(Params, 0, maxParams)
 	skippedNodes := make([]skippedNode, 0, engine.maxSections)
-	return &Context{engine: engine, params: &v, skippedNodes: &skippedNodes}
+	return &Context{engine: engine, params: &v, skippedNodes: &skippedNodes, container: engine.container}
 }
 
 // Delims sets template left and right delims and returns an Engine instance.

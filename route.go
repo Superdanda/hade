@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/echo/hade/framework/gin"
+	"github.com/Superdanda/hade/framework/gin"
 )
 
 func registerRouter(core *gin.Engine) {

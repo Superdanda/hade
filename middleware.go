@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/echo/hade/framework/gin"
+	"github.com/Superdanda/hade/framework/gin"
 )
 
 func Test1() gin.HandlerFunc {
