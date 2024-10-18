@@ -1,15 +1,22 @@
 package main
 
-import "framework1/framework"
+import (
+	"github.com/echo/hade/framework/gin"
+)
 
-func registerRouter(core *framework.Core) {
-	core.Get("/user/login", UserLoginController)
+func registerRouter(core *gin.Engine) {
+	core.Use(Test2(), Test3())
+	core.GET("/user/login", Test1(), UserLoginController)
 
 	subjectGroup := core.Group("/subject")
 	{
-		subjectGroup.Delete("/:id", SubjectDelController)
-		subjectGroup.Put("/:id", SubjectUpdateController)
-		subjectGroup.Get("/:id", SubjectUpdateController)
-		subjectGroup.Get("/list/all", SubjectListController)
+		parentGroup := subjectGroup.Group("/parent")
+		parentGroup.Use(Test1())
+		{
+			parentGroup.DELETE("/:id", SubjectDelController)
+			parentGroup.PUT("/:id", SubjectUpdateController)
+			parentGroup.GET("/:id", SubjectUpdateController)
+			parentGroup.GET("/list/all", SubjectListController)
+		}
 	}
 }
