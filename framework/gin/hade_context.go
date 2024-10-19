@@ -34,3 +34,7 @@ func (ctx *Context) MustMake(key string) interface{} {
 func (ctx *Context) MakeNew(key string, params []interface{}) (interface{}, error) {
 	return ctx.container.MakeNew(key, params)
 }
+
+func (engine *Engine) SetContainer(container framework.Container) {
+	engine.container = container
+}

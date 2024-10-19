@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/Superdanda/hade/app/provider/demo"
 	"github.com/Superdanda/hade/framework/gin"
-	"github.com/Superdanda/hade/provider/demo"
 )
 
 func SubjectDelController(c *gin.Context) {
@@ -19,8 +19,6 @@ func SubjectGetController(c *gin.Context) {
 
 func SubjectListController(c *gin.Context) {
 	demoService := c.MustMake(demo.Key).(demo.Service)
-
 	foo := demoService.GetFoo()
-
 	c.ISetOkStatus().IJson(foo)
 }

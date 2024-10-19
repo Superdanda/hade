@@ -27,6 +27,7 @@ type Container interface {
 }
 
 type HadeContainer struct {
+	Container
 	// providers 存储注册的服务提供者，key 为字符串凭证
 	providers map[string]ServiceProvider
 	// instance 存储具体的实例，key 为字符串凭证
@@ -147,7 +148,7 @@ func (h *HadeContainer) newInstance(provider ServiceProvider, params []interface
 		params = provider.Params(h)
 	}
 	register := provider.Register(h)
-	instance, err := register(params)
+	instance, err := register(params...)
 	if err != nil {
 		return nil, err
 	}

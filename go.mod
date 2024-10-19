@@ -2,7 +2,16 @@ module github.com/Superdanda/hade
 
 go 1.23.2
 
-require github.com/spf13/cast v1.7.0
+require (
+	github.com/robfig/cron/v3 v3.0.0
+	github.com/sevlyar/go-daemon v0.1.6
+	github.com/spf13/cast v1.7.0
+)
+
+require (
+	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+)
 
 //gin
 require (
@@ -39,4 +48,11 @@ require (
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
+)
+
+//codra
+require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.4
+	github.com/inconshreveable/mousetrap v1.1.0
+	github.com/spf13/pflag v1.0.5
 )
