@@ -25,6 +25,6 @@ func (sp *DemoServiceProvider) Params(c framework.Container) []interface{} {
 }
 
 func (sp *DemoServiceProvider) Boot(c framework.Container) error {
-	fmt.Println("demo service boot")
+	fmt.Println("demo services boot")
 	return nil
 }

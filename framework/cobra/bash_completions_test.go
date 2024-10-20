@@ -84,7 +84,7 @@ func TestBashCompletions(t *testing.T) {
 	rootCmd := &Command{
 		Use:                    "root",
 		ArgAliases:             []string{"pods", "nodes", "services", "replicationcontrollers", "po", "no", "svc", "rc"},
-		ValidArgs:              []string{"pod", "node", "service", "replicationcontroller"},
+		ValidArgs:              []string{"pod", "node", "services", "replicationcontroller"},
 		BashCompletionFunction: bashCompletionFunc,
 		Run:                    emptyRun,
 	}

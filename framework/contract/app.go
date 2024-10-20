@@ -29,4 +29,8 @@ type App interface {
 	HttpFolder() string
 	// ConsoleFolder 存放命令行
 	ConsoleFolder() string
+	// AppID 表示当前这个app的唯一id, 可以用于分布式锁等
+	AppId() string
+
+	LoadAppConfig(mapString map[string]string)
 }

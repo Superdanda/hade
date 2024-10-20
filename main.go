@@ -5,7 +5,11 @@ import (
 	"github.com/Superdanda/hade/app/http"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/provider/app"
+	"github.com/Superdanda/hade/framework/provider/config"
+	"github.com/Superdanda/hade/framework/provider/distributed"
+	"github.com/Superdanda/hade/framework/provider/env"
 	"github.com/Superdanda/hade/framework/provider/kernel"
+	"github.com/Superdanda/hade/framework/provider/log"
 )
 
 //func main() {
@@ -49,10 +53,19 @@ func main() {
 	// 绑定App服务提供者
 	container.Bind(&app.HadeAppProvider{})
 	// 后续初始化需要绑定的服务提供者...
+	container.Bind(&env.HadeEnvProvider{})
+	container.Bind(&distributed.LocalDistributedProvider{})
+	container.Bind(&config.HadeConfigProvider{})
+	//container.Bind(&id.HadeIDProvider{})
+	//container.Bind(&trace.HadeTraceProvider{})
+	container.Bind(&log.HadeLogServiceProvider{})
+	//container.Bind(&config.HadeConfigProvider{})
 
 	// 将HTTP引擎初始化,并且作为服务提供者绑定到服务容器中
 	if engine, err := http.NewHttpEngine(); err == nil {
 		container.Bind(&kernel.HadeKernelProvider{HttpEngine: engine})
 	}
+
+	// 运行root命令
 	console.RunCommand(container)
 }

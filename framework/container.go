@@ -57,25 +57,13 @@ func (h *HadeContainer) PrintProviders() []string {
 }
 
 func (h *HadeContainer) Bind(provider ServiceProvider) error {
-	//因为要对容器进行更改，先使用读写锁避免并发操作
-	h.lock.Lock()
-	defer h.lock.Unlock()
-
 	key := provider.Name()
 	h.providers[key] = provider
-
 	if !provider.IsDefer() {
-		//如果服务者不需要延迟加载的话， 直接创建服务实例
-		if err := provider.Boot(h); err == nil {
-			return err
-		}
-		params := provider.Params(h)
-		register := provider.Register(h)
-		instance, err := register(params)
+		_, err := h.newInstance(key, provider, nil)
 		if err != nil {
 			return err
 		}
-		h.instances[key] = instance
 	}
 	return nil
 }
@@ -102,10 +90,6 @@ func (h *HadeContainer) MakeNew(key string, params []interface{}) (interface{}, 
 }
 
 func (h *HadeContainer) make(key string, params []interface{}, forceNew bool) (interface{}, error) {
-	//因为要对容器进行更改，先使用读写锁避免并发操作
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-
 	provider, err := h.findServiceProvider(key)
 	if err != nil {
 		return nil, err
@@ -113,7 +97,7 @@ func (h *HadeContainer) make(key string, params []interface{}, forceNew bool) (i
 
 	//强制重新实例化
 	if forceNew {
-		return h.newInstance(provider, params)
+		return h.newInstance(key, provider, params)
 	}
 
 	// 不需要强制重新实例化，如果容器中已经实例化了，那么就直接使用容器中的实例
@@ -122,12 +106,10 @@ func (h *HadeContainer) make(key string, params []interface{}, forceNew bool) (i
 	}
 
 	// 容器中还未实例化，则进行一次实例化
-	instance, err := h.newInstance(provider, params)
+	instance, err := h.newInstance(key, provider, params)
 	if err != nil {
 		return nil, err
 	}
-
-	h.instances[key] = instance
 	return instance, nil
 }
 
@@ -139,7 +121,10 @@ func (h *HadeContainer) findServiceProvider(key string) (ServiceProvider, error)
 	return provider, nil
 }
 
-func (h *HadeContainer) newInstance(provider ServiceProvider, params []interface{}) (interface{}, error) {
+func (h *HadeContainer) newInstance(key string, provider ServiceProvider, params []interface{}) (interface{}, error) {
+	//因为要对容器进行更改，先使用读写锁避免并发操作
+	h.lock.Lock()
+	defer h.lock.Unlock()
 	// force new a
 	if err := provider.Boot(h); err != nil {
 		return nil, err
@@ -152,5 +137,6 @@ func (h *HadeContainer) newInstance(provider ServiceProvider, params []interface
 	if err != nil {
 		return nil, err
 	}
+	h.instances[key] = instance
 	return instance, nil
 }

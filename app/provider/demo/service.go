@@ -31,6 +31,6 @@ func (s *DemoService) GetFoo() Foo {
 
 func NewDemoService(params ...interface{}) (interface{}, error) {
 	c := params[0].(framework.Container)
-	fmt.Println("new demo service")
+	fmt.Println("new demo services")
 	return &DemoService{c: c}, nil
 }

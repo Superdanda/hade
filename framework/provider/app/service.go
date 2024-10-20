@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/util"
+	"github.com/google/uuid"
 	"path/filepath"
 )
 
 type HadeApp struct {
 	container  framework.Container
 	baseFolder string
+	appId      string
+
+	configMap map[string]string // 配置加载
 }
 
 func NewHadeApp(params ...interface{}) (interface{}, error) {
@@ -19,7 +23,9 @@ func NewHadeApp(params ...interface{}) (interface{}, error) {
 	// 有两个参数，一个是容器，一个是baseFolder
 	container := params[0].(framework.Container)
 	baseFolder := params[1].(string)
-	return &HadeApp{container: container, baseFolder: baseFolder}, nil
+	appId := uuid.New().String()
+	configMap := make(map[string]string)
+	return &HadeApp{container: container, baseFolder: baseFolder, appId: appId, configMap: configMap}, nil
 }
 
 func (h HadeApp) BaseFolder() string {
@@ -48,6 +54,9 @@ func (h HadeApp) ConfigFolder() string {
 }
 
 func (h HadeApp) LogFolder() string {
+	if val, ok := h.configMap["log_folder"]; ok {
+		return val
+	}
 	return filepath.Join(h.StorageFolder(), "log")
 }
 
@@ -77,4 +86,14 @@ func (h HadeApp) HttpFolder() string {
 
 func (h HadeApp) ConsoleFolder() string {
 	return filepath.Join(h.BaseFolder(), "console")
+}
+
+func (h HadeApp) AppId() string {
+	return h.appId
+}
+
+func (h HadeApp) LoadAppConfig(mapString map[string]string) {
+	for key, val := range mapString {
+		h.configMap[key] = val
+	}
 }

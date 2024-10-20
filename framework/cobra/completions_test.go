@@ -3372,11 +3372,11 @@ func TestArgsNotDetectedAsFlagsCompletionInGo(t *testing.T) {
 	root := Command{
 		Use: "root",
 		ValidArgsFunction: func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
-			return []string{"service", "1-123", "11-123"}, ShellCompDirectiveNoFileComp
+			return []string{"services", "1-123", "11-123"}, ShellCompDirectiveNoFileComp
 		},
 	}
 
-	completion := `service
+	completion := `services
 1-123
 11-123
 :4
@@ -3394,23 +3394,23 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 			expectedOutput: completion,
 		},
 		{
-			desc:           "service only",
-			args:           []string{"service", ""},
+			desc:           "services only",
+			args:           []string{"services", ""},
 			expectedOutput: completion,
 		},
 		{
-			desc:           "service last",
-			args:           []string{"1-123", "service", ""},
+			desc:           "services last",
+			args:           []string{"1-123", "services", ""},
 			expectedOutput: completion,
 		},
 		{
 			desc:           "two digit prefixed dash last",
-			args:           []string{"service", "11-123", ""},
+			args:           []string{"services", "11-123", ""},
 			expectedOutput: completion,
 		},
 		{
 			desc:           "one digit prefixed dash last",
-			args:           []string{"service", "1-123", ""},
+			args:           []string{"services", "1-123", ""},
 			expectedOutput: completion,
 		},
 	}

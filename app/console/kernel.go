@@ -5,6 +5,7 @@ import (
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/cobra"
 	"github.com/Superdanda/hade/framework/command"
+	"time"
 )
 
 func RunCommand(container framework.Container) error {
@@ -15,7 +16,7 @@ func RunCommand(container framework.Container) error {
 		// 简短介绍
 		Short: "hade 命令",
 		// 根命令的详细介绍
-		Long: "hade 框架提供的命令行工具，使用这个命令行工具能很方便执行框架自带命令，也能很方便编写业务命令\n\n极客时间版权所有: https://time.geekbang.org/column/article/426765",
+		Long: "hade 框架提供的命令行工具，使用这个命令行工具能很方便执行框架自带命令，也能很方便编写业务命令",
 		// 根命令的执行函数
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.InitDefaultHelpFlag()
@@ -37,6 +38,7 @@ func RunCommand(container framework.Container) error {
 // 绑定业务的命令
 func AddAppCommand(rootCmd *cobra.Command) {
 	//  demo 例子
-	rootCmd.AddCronCommand("* * * * * *", demo.InitFoo())
-
+	rootCmd.AddDistributedCronCommand("foo_func_for_test",
+		"* * * * * *",
+		demo.InitFoo(), 2*time.Second)
 }
