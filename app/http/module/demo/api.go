@@ -18,5 +18,5 @@ func Demo(c *gin.Context) {
 	log := c.MustMake(contract.LogKey).(contract.Log)
 	password := configService.GetString("database.mysql.password")
 	log.Info(c, "ceshiceshi", map[string]interface{}{})
-	c.JSON(200, password)
+	c.JSON(200, password+"测123")
 }

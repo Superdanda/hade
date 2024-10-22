@@ -33,4 +33,6 @@ type App interface {
 	AppId() string
 
 	LoadAppConfig(mapString map[string]string)
+
+	AppFolder() string
 }

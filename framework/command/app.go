@@ -12,7 +12,11 @@ import (
 	"time"
 )
 
+var appAddress = ""
+
 func initAppCommand() *cobra.Command {
+	appStartCommand.Flags().StringVar(&appAddress, "address", "", "set app address")
+
 	appCommand.AddCommand(appStartCommand)
 	return appCommand
 }
@@ -38,10 +42,16 @@ var appStartCommand = &cobra.Command{
 		// 从kernel服务实例中获取引擎
 		core := kernelService.HttpEngine()
 
+		var addr string
+		if appAddress == "" {
+			addr = ":8070"
+		} else {
+			addr = appAddress
+		}
 		// 创建一个Server服务
 		server := &http.Server{
 			Handler: core,
-			Addr:    ":8888",
+			Addr:    addr,
 		}
 
 		// 这个goroutine是启动服务的goroutine

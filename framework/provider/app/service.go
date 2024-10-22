@@ -88,6 +88,10 @@ func (h HadeApp) ConsoleFolder() string {
 	return filepath.Join(h.BaseFolder(), "console")
 }
 
+func (h HadeApp) AppFolder() string {
+	return filepath.Join(h.BaseFolder(), "app")
+}
+
 func (h HadeApp) AppId() string {
 	return h.appId
 }
