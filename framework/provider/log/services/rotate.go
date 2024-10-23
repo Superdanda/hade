@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -56,9 +57,20 @@ func NewHadeRotateLog(params ...interface{}) (interface{}, error) {
 		dateFormat = configService.GetString("log.date_format")
 	}
 
-	// 创建一个符号链接，指向当前正在写入的日志文件
-	linkName := rotatelogs.WithLinkName(filepath.Join(folder, file))
-	options := []rotatelogs.Option{linkName}
+	// 创建 rotatelogs 配置选项
+	var options []rotatelogs.Option
+
+	// 检查操作系统，避免在 Windows 上创建符号链接
+	if runtime.GOOS != "windows" {
+		// 创建一个符号链接，指向当前正在写入的日志文件
+		linkName := rotatelogs.WithLinkName(filepath.Join(folder, file))
+		options = append(options, linkName)
+	} else {
+		// Windows 下的替代方案（可选）：不创建符号链接或其他处理方式
+		// 可以在此添加 Windows 特定的处理，例如创建硬链接或直接忽略
+		// 这里我们选择不添加 linkName 选项
+		//fmt.Println("Windows 系统下不创建符号链接")
+	}
 
 	// 从配置文件获取rotate_count信息
 	if configService.IsExist("log.rotate_count") {

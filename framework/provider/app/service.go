@@ -61,7 +61,7 @@ func (h HadeApp) LogFolder() string {
 }
 
 func (h HadeApp) ProviderFolder() string {
-	return filepath.Join(h.BaseFolder(), "provider")
+	return filepath.Join(h.AppFolder(), "provider")
 }
 
 func (h HadeApp) MiddlewareFolder() string {
@@ -85,7 +85,7 @@ func (h HadeApp) HttpFolder() string {
 }
 
 func (h HadeApp) ConsoleFolder() string {
-	return filepath.Join(h.BaseFolder(), "console")
+	return filepath.Join(h.AppFolder(), "console")
 }
 
 func (h HadeApp) AppFolder() string {

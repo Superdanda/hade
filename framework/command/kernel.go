@@ -14,6 +14,9 @@ func AddKernelCommands(root *cobra.Command) {
 	root.AddCommand(initEnvCommand())
 	root.AddCommand(initBuildCommand())
 	root.AddCommand(initDevCommand())
+	root.AddCommand(initProviderCommand())
+	root.AddCommand(initCmdCommand())
+	root.AddCommand(initMiddlewareCommand())
 }
 
 // 封装通用的命令执行器

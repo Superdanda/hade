@@ -24,6 +24,9 @@ type Container interface {
 	//它是根据服务提供者注册的启动函数和传递的 params 参数实例化出来的
 	//这个函数在需要为不同参数启动不同实例的时候非常有用
 	MakeNew(key string, params []interface{}) (interface{}, error)
+
+	//NameList 返回所有提供服务者的字符串凭证
+	NameList() []string
 }
 
 type HadeContainer struct {
@@ -87,6 +90,15 @@ func (h *HadeContainer) MustMake(key string) interface{} {
 
 func (h *HadeContainer) MakeNew(key string, params []interface{}) (interface{}, error) {
 	return h.make(key, params, true)
+}
+
+func (h *HadeContainer) NameList() []string {
+	ret := []string{}
+	for _, provider := range h.providers {
+		name := provider.Name()
+		ret = append(ret, name)
+	}
+	return ret
 }
 
 func (h *HadeContainer) make(key string, params []interface{}, forceNew bool) (interface{}, error) {
