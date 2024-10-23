@@ -10,6 +10,7 @@ import (
 	"github.com/Superdanda/hade/framework/provider/env"
 	"github.com/Superdanda/hade/framework/provider/kernel"
 	"github.com/Superdanda/hade/framework/provider/log"
+	"github.com/Superdanda/hade/framework/provider/orm"
 )
 
 //func main() {
@@ -59,10 +60,11 @@ func main() {
 	//container.Bind(&id.HadeIDProvider{})
 	//container.Bind(&trace.HadeTraceProvider{})
 	container.Bind(&log.HadeLogServiceProvider{})
+	container.Bind(&orm.GormProvider{})
 	//container.Bind(&config.HadeConfigProvider{})
 
 	// 将HTTP引擎初始化,并且作为服务提供者绑定到服务容器中
-	if engine, err := http.NewHttpEngine(); err == nil {
+	if engine, err := http.NewHttpEngine(container); err == nil {
 		container.Bind(&kernel.HadeKernelProvider{HttpEngine: engine})
 	}
 

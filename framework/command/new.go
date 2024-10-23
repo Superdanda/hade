@@ -98,7 +98,7 @@ var newCommand = &cobra.Command{
 				}
 			}
 			if version == "" {
-				release, _, err = client.Repositories.GetLatestRelease(context.Background(), "gohade", "hade")
+				release, _, err = client.Repositories.GetLatestRelease(context.Background(), "Superdanda", "hade")
 				version = release.GetTagName()
 			}
 		}
@@ -125,15 +125,22 @@ var newCommand = &cobra.Command{
 			return err
 		}
 
-		// 获取folder下的gohade-hade-xxx相关解压目录
+		// 获取folder下的Superdanda-hade-xxx相关解压目录
 		fInfos, err := ioutil.ReadDir(templateFolder)
 		if err != nil {
 			return err
 		}
 		for _, fInfo := range fInfos {
 			// 找到解压后的文件夹
-			if fInfo.IsDir() && strings.Contains(fInfo.Name(), "gohade-hade-") {
-				if err := os.Rename(filepath.Join(templateFolder, fInfo.Name()), folder); err != nil {
+			//if fInfo.IsDir() && strings.Contains(fInfo.Name(), "Superdanda-hade-") {
+			//	if err := os.Rename(filepath.Join(templateFolder, fInfo.Name()), folder); err != nil {
+			//		return err
+			//	}
+			//}
+
+			if fInfo.IsDir() && strings.Contains(fInfo.Name(), "Superdanda-hade-") {
+				// 使用复制方法而不是重命名
+				if err := util.CopyDir(filepath.Join(templateFolder, fInfo.Name()), folder); err != nil {
 					return err
 				}
 			}

@@ -64,3 +64,51 @@ func DownloadFile(filepath string, url string) error {
 	_, err = io.Copy(out, resp.Body)
 	return err
 }
+
+// 复制单个文件
+func CopyFile(srcFile, dstFile string) error {
+	src, err := os.Open(srcFile)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(dstFile)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	return err
+}
+
+// 递归复制整个目录
+func CopyDir(srcDir, dstDir string) error {
+	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 目标路径
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		destPath := filepath.Join(dstDir, relPath)
+
+		// 如果是目录，创建目标目录
+		if info.IsDir() {
+			if err := os.MkdirAll(destPath, info.Mode()); err != nil {
+				return err
+			}
+		} else {
+			// 如果是文件，复制文件
+			if err := CopyFile(path, destPath); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
