@@ -241,6 +241,12 @@ func (conf *HadeConfig) find(key string) interface{} {
 	return searchMap(conf.confMaps, strings.Split(key, conf.keyDelim))
 }
 
+func (conf *HadeConfig) GetAppName() string {
+	conf.lock.RLock()
+	defer conf.lock.RUnlock()
+	return conf.GetString("app.name")
+}
+
 func searchMap(source map[string]interface{}, path []string) interface{} {
 	if len(path) == 0 {
 		return source

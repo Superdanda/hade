@@ -80,6 +80,7 @@ type Proxy struct {
 	proxyServer *http.Server // proxy的服务
 	backendPid  int          // 当前的backend服务的pid
 	frontendPid int          // 当前的frontend服务的pid
+	container   framework.Container
 }
 
 // NewProxy 初始化一个Proxy
@@ -87,6 +88,7 @@ func NewProxy(c framework.Container) *Proxy {
 	devConfig := initDevConfig(c)
 	return &Proxy{
 		devConfig: devConfig,
+		container: c,
 	}
 }
 
@@ -142,7 +144,8 @@ func (p *Proxy) newProxyReverseProxy(frontend, backend *url.URL) *httputil.Rever
 func (p *Proxy) rebuildBackend() error {
 	// 重新编译hade
 	fmt.Println("重新编译后端服务")
-	cmdBuild := exec.Command("./hade", "build", "backend")
+	config := p.container.MustMake(contract.ConfigKey).(contract.Config)
+	cmdBuild := exec.Command("./"+config.GetAppName(), "build", "backend")
 	cmdBuild.Stdout = os.Stdout
 	cmdBuild.Stderr = os.Stderr
 	if err := cmdBuild.Start(); err == nil {
@@ -179,7 +182,8 @@ func (p *Proxy) restartBackend() error {
 	// 使用命令行启动后端进程
 
 	// 根据系统设置输出文件名
-	execName := "./hade"
+	config := p.container.MustMake(contract.ConfigKey).(contract.Config)
+	execName := "./" + config.GetAppName()
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}

@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"github.com/Superdanda/hade/framework/cobra"
+	"github.com/Superdanda/hade/framework/contract"
 	"log"
 	"os/exec"
 	"runtime"
@@ -20,13 +21,16 @@ var buildSelfCommand = &cobra.Command{
 	Use:   "self",
 	Short: "编译hade命令",
 	RunE: func(c *cobra.Command, args []string) error {
+		container := c.GetContainer()
+		config := container.MustMake(contract.ConfigKey).(contract.Config)
+
 		path, err := exec.LookPath("go")
 		if err != nil {
 			log.Fatalln("hade go: 请在Path路径中先安装go")
 		}
 
 		// 根据系统设置输出文件名
-		output := "hade"
+		output := config.GetAppName()
 		env := []string{}
 		if runtime.GOOS == "windows" {
 			output += ".exe"
@@ -46,7 +50,7 @@ var buildSelfCommand = &cobra.Command{
 			return err
 		}
 		fmt.Println(string(out))
-		fmt.Println("编译hade成功")
+		fmt.Println("编译" + output + "项目成功")
 		return nil
 	},
 }

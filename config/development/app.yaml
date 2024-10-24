@@ -1,5 +1,7 @@
 url: http://127.0.0.1:8066
 
+name: hade
+
 swagger_open: true
 
 dev_fresh: 1

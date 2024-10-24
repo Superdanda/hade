@@ -141,7 +141,7 @@ func deployBuildBackend(c *cobra.Command, deployFolder string) error {
 
 	env := envService.AppEnv()
 
-	binFile := "hade"
+	binFile := configService.GetAppName()
 
 	// 编译前端
 	path, err := exec.LookPath("go")

@@ -36,4 +36,6 @@ type Config interface {
 
 	// Load 加载配置到某个对象
 	Load(key string, val interface{}) error
+
+	GetAppName() string
 }
