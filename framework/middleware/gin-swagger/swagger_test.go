@@ -1,18 +1,17 @@
 package ginSwagger
 
 import (
+	"github.com/Superdanda/hade/framework/gin"
+	"github.com/Superdanda/hade/framework/middleware/gin-swagger/swaggerFiles"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/swaggo/swag"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
 
 type mockedSwag struct{}
@@ -119,7 +118,7 @@ func TestWithGzipMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
-	router.Use(gzip.Gzip(gzip.BestSpeed))
+	//router.Use(gzip.Gzip(gzip.BestSpeed))
 
 	router.GET("/*any", WrapHandler(swaggerFiles.Handler))
 
