@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-// 判断所给路径文件/文件夹是否存在
+// Exists  判断所给路径文件/文件夹是否存在
 func Exists(path string) bool {
 	_, err := os.Stat(path) //os.Stat获取文件信息
 	if err != nil {
@@ -21,12 +22,24 @@ func Exists(path string) bool {
 	return true
 }
 
-// 路径是否是隐藏路径
+// EnsureDir 如果文件夹不存在，就创建文件夹
+func EnsureDir(path string) error {
+	if !Exists(path) {
+		fmt.Printf("Directory does not exist, creating: %s\n", path)
+		// 使用 MkdirAll 递归创建路径，支持多层级路径
+		if err := os.MkdirAll(path, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// IsHiddenDirectory 路径是否是隐藏路径
 func IsHiddenDirectory(path string) bool {
 	return len(path) > 1 && strings.HasPrefix(filepath.Base(path), ".")
 }
 
-// 输出所有子目录，目录名
+// SubDir 输出所有子目录，目录名
 func SubDir(folder string) ([]string, error) {
 	subs, err := ioutil.ReadDir(folder)
 	if err != nil {

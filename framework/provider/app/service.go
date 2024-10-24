@@ -73,7 +73,9 @@ func (h HadeApp) CommandFolder() string {
 }
 
 func (h HadeApp) RuntimeFolder() string {
-	return filepath.Join(h.StorageFolder(), "runtime")
+	runtimeFolder := filepath.Join(h.StorageFolder(), "runtime")
+	util.EnsureDir(runtimeFolder)
+	return runtimeFolder
 }
 
 func (h HadeApp) TestFolder() string {
@@ -90,6 +92,12 @@ func (h HadeApp) ConsoleFolder() string {
 
 func (h HadeApp) AppFolder() string {
 	return filepath.Join(h.BaseFolder(), "app")
+}
+
+func (h HadeApp) DeployFolder() string {
+	deployFolder := filepath.Join(h.BaseFolder(), "deploy")
+	util.EnsureDir(deployFolder)
+	return deployFolder
 }
 
 func (h HadeApp) AppId() string {

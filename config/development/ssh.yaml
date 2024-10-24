@@ -1,0 +1,7 @@
+timeout: 1s
+network: tcp
+web-01:
+  host: 47.97.21.20 # ip地址
+  port: 22 # 端口
+  username: root # 用户名
+  password: "Kerowsqw34." # 密码

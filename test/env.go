@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	BasePath = "/Users/yejianfeng/Documents/UGit/coredemo/"
+	BasePath = "C:\\Users\\lulz1\\GolandProjects\\framework1"
 )
 
 func InitBaseContainer() framework.Container {

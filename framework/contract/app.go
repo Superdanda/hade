@@ -35,4 +35,6 @@ type App interface {
 	LoadAppConfig(mapString map[string]string)
 
 	AppFolder() string
+	// DeployFolder 部署文件夹
+	DeployFolder() string
 }

@@ -5,48 +5,16 @@ import (
 	"github.com/Superdanda/hade/app/http"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/provider/app"
+	"github.com/Superdanda/hade/framework/provider/cache"
 	"github.com/Superdanda/hade/framework/provider/config"
 	"github.com/Superdanda/hade/framework/provider/distributed"
 	"github.com/Superdanda/hade/framework/provider/env"
 	"github.com/Superdanda/hade/framework/provider/kernel"
 	"github.com/Superdanda/hade/framework/provider/log"
 	"github.com/Superdanda/hade/framework/provider/orm"
+	"github.com/Superdanda/hade/framework/provider/redis"
+	"github.com/Superdanda/hade/framework/provider/ssh"
 )
-
-//func main() {
-//core := gin.New()
-//
-//core.Use(middleware2.Recovery())
-//core.Use(middleware2.Cost())
-//
-//core.Bind(&demo.DemoServiceProvider{})
-//core.Bind(&app.HadeAppProvider{
-//	BaseFolder: "/tmp",
-//})
-//module.Routes(core)
-//server := &http.Server{
-//	Handler: core,
-//	Addr:    ":8888",
-//}
-//go func() {
-//	server.ListenAndServe()
-//}()
-//
-//// 当前的 Goroutine 等待信号量
-//quit := make(chan os.Signal)
-//// 监控信号：SIGINT, SIGTERM, SIGQUIT
-//signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-//// 这里会阻塞当前goroutine等待信号
-//<-quit
-//
-//// 调用Server.Shutdown graceful结束
-//timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-//defer cancel()
-//
-//if err := server.Shutdown(timeoutCtx); err != nil {
-//	log.Fatal("Server Shutdown:", err)
-//}
-//}
 
 func main() {
 	// 初始化服务容器
@@ -61,7 +29,9 @@ func main() {
 	//container.Bind(&trace.HadeTraceProvider{})
 	container.Bind(&log.HadeLogServiceProvider{})
 	container.Bind(&orm.GormProvider{})
-	//container.Bind(&config.HadeConfigProvider{})
+	container.Bind(&redis.RedisProvider{})
+	container.Bind(&cache.HadeCacheProvider{})
+	container.Bind(&ssh.SSHProvider{})
 
 	// 将HTTP引擎初始化,并且作为服务提供者绑定到服务容器中
 	if engine, err := http.NewHttpEngine(container); err == nil {

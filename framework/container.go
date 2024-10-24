@@ -135,8 +135,8 @@ func (h *HadeContainer) findServiceProvider(key string) (ServiceProvider, error)
 
 func (h *HadeContainer) newInstance(key string, provider ServiceProvider, params []interface{}) (interface{}, error) {
 	//因为要对容器进行更改，先使用读写锁避免并发操作
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.lock.RLock()
+	defer h.lock.RUnlock()
 	// force new a
 	if err := provider.Boot(h); err != nil {
 		return nil, err
