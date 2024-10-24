@@ -105,6 +105,12 @@ var providerCreateCommand = &cobra.Command{
 		if err := os.Mkdir(filepath.Join(pFolder, folder), 0700); err != nil {
 			return err
 		}
+		// 模板数据
+		config := container.MustMake(contract.ConfigKey).(contract.Config)
+		data := map[string]interface{}{
+			"appName":     config.GetAppName(),
+			"packageName": name,
+		}
 		// 创建title这个模版方法
 		funcs := template.FuncMap{"title": strings.Title}
 		{
@@ -115,10 +121,10 @@ var providerCreateCommand = &cobra.Command{
 				return errors.Cause(err)
 			}
 
-			// 使用contractTmp模版来初始化template，并且让这个模版支持title方法，即支持{{.|title}}
+			// 使用contractTmp模版来初始化template，并且让这个模版支持title方法，即支持{{.packageName | title}}
 			t := template.Must(template.New("contract").Funcs(funcs).Parse(contractTmp))
 			// 将name传递进入到template中渲染，并且输出到contract.go 中
-			if err := t.Execute(f, name); err != nil {
+			if err := t.Execute(f, data); err != nil {
 				return errors.Cause(err)
 			}
 		}
@@ -130,7 +136,7 @@ var providerCreateCommand = &cobra.Command{
 				return err
 			}
 			t := template.Must(template.New("provider").Funcs(funcs).Parse(providerTmp))
-			if err := t.Execute(f, name); err != nil {
+			if err := t.Execute(f, data); err != nil {
 				return err
 			}
 		}
@@ -142,7 +148,7 @@ var providerCreateCommand = &cobra.Command{
 				return err
 			}
 			t := template.Must(template.New("service").Funcs(funcs).Parse(serviceTmp))
-			if err := t.Execute(f, name); err != nil {
+			if err := t.Execute(f, data); err != nil {
 				return err
 			}
 		}
@@ -152,9 +158,9 @@ var providerCreateCommand = &cobra.Command{
 	},
 }
 
-var contractTmp = `package {{.}}
+var contractTmp = `package {{.packageName}}
 
-const {{.|title}}Key = "{{.}}"
+const {{.packageName | title}}Key = "{{.appName}}:{{.packageName}}"
 
 type Service interface {
 	// 请在这里定义你的方法
@@ -162,54 +168,54 @@ type Service interface {
 }
 `
 
-var providerTmp = `package {{.}}
+var providerTmp = `package {{.packageName}}
 
 import (
 	"github.com/Superdanda/hade/framework"
 )
 
-type {{.|title}}Provider struct {
+type {{.packageName | title}}Provider struct {
 	framework.ServiceProvider
 
 	c framework.Container
 }
 
-func (sp *{{.|title}}Provider) Name() string {
-	return {{.|title}}Key
+func (sp *{{.packageName | title}}Provider) Name() string {
+	return {{.packageName | title}}Key
 }
 
-func (sp *{{.|title}}Provider) Register(c framework.Container) framework.NewInstance {
-	return New{{.|title}}Service
+func (sp *{{.packageName | title}}Provider) Register(c framework.Container) framework.NewInstance {
+	return New{{.packageName | title}}Service
 }
 
-func (sp *{{.|title}}Provider) IsDefer() bool {
+func (sp *{{.packageName | title}}Provider) IsDefer() bool {
 	return false
 }
 
-func (sp *{{.|title}}Provider) Params(c framework.Container) []interface{} {
+func (sp *{{.packageName | title}}Provider) Params(c framework.Container) []interface{} {
 	return []interface{}{c}
 }
 
-func (sp *{{.|title}}Provider) Boot(c framework.Container) error {
+func (sp *{{.packageName | title}}Provider) Boot(c framework.Container) error {
 	return nil
 }
 
 `
 
-var serviceTmp = `package {{.}}
+var serviceTmp = `package {{.packageName}}
 
 import "github.com/Superdanda/hade/framework"
 
-type {{.|title}}Service struct {
+type {{.packageName | title}}Service struct {
 	container framework.Container
 }
 
-func New{{.|title}}Service(params ...interface{}) (interface{}, error) {
+func New{{.packageName | title}}Service(params ...interface{}) (interface{}, error) {
 	container := params[0].(framework.Container)
-	return &{{.|title}}Service{container: container}, nil
+	return &{{.packageName | title}}Service{container: container}, nil
 }
 
-func (s *{{.|title}}Service) Foo() string {
+func (s *{{.packageName | title}}Service) Foo() string {
     return ""
 }
 `
