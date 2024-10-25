@@ -2,11 +2,13 @@ package util
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -124,4 +126,18 @@ func CopyDir(srcDir, dstDir string) error {
 
 		return nil
 	})
+}
+
+func ReadFileToString(file string) (string, error) {
+	// 读取 pid 文件内容
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return "", errors.Wrap(err, "读取文件失败: "+file)
+	}
+	return string(data), nil
+}
+
+func ReadFileToInt(file string) (int, error) {
+	toString, _ := ReadFileToString(file)
+	return strconv.Atoi(toString)
 }
