@@ -83,7 +83,7 @@ func (h HadeApp) TestFolder() string {
 }
 
 func (h HadeApp) HttpFolder() string {
-	return filepath.Join(h.BaseFolder(), "http")
+	return filepath.Join(h.AppFolder(), "http")
 }
 
 func (h HadeApp) ConsoleFolder() string {
@@ -97,6 +97,11 @@ func (h HadeApp) AppFolder() string {
 func (h HadeApp) DeployFolder() string {
 	deployFolder := filepath.Join(h.BaseFolder(), "deploy")
 	util.EnsureDir(deployFolder)
+	return deployFolder
+}
+
+func (h HadeApp) HttpModuleFolder() string {
+	deployFolder := filepath.Join(h.HttpFolder(), "module")
 	return deployFolder
 }
 

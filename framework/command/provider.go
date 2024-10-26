@@ -55,8 +55,8 @@ var providerCreateCommand = &cobra.Command{
 	RunE: func(c *cobra.Command, args []string) error {
 		container := c.GetContainer()
 		fmt.Println("创建一个服务")
-		var name string
-		var folder string
+		var name, folder string
+		var interfaceNames []string
 		{
 			prompt := &survey.Input{
 				Message: "请输入服务名称(服务凭证)：",
@@ -101,6 +101,36 @@ var providerCreateCommand = &cobra.Command{
 			return nil
 		}
 
+		// Keep asking for interface names until the user presses Enter to stop
+		for {
+			prompt := &survey.Input{
+				Message: "请输入接口名称（直接按回车结束输入）：",
+			}
+
+			var input string
+			err := survey.AskOne(prompt, &input)
+			if err != nil {
+				return err
+			}
+
+			// If the user presses Enter without input, break the loop
+			if strings.TrimSpace(input) == "" {
+				fmt.Println("接口输入结束")
+				break
+			}
+
+			// Add the valid interface name to the slice
+			interfaceNames = append(interfaceNames, input)
+			fmt.Printf("已添加接口：%s\n", input)
+		}
+
+		// Print all the interface names added by the user
+		if len(interfaceNames) > 0 {
+			fmt.Println("已添加的接口名称：", interfaceNames)
+		} else {
+			fmt.Println("未添加任何接口")
+		}
+
 		// 开始创建文件
 		if err := os.Mkdir(filepath.Join(pFolder, folder), 0700); err != nil {
 			return err
@@ -110,6 +140,7 @@ var providerCreateCommand = &cobra.Command{
 		data := map[string]interface{}{
 			"appName":     config.GetAppName(),
 			"packageName": name,
+			"interfaces":  interfaceNames,
 		}
 		// 创建title这个模版方法
 		funcs := template.FuncMap{"title": strings.Title}
@@ -150,6 +181,88 @@ var providerCreateCommand = &cobra.Command{
 			t := template.Must(template.New("service").Funcs(funcs).Parse(serviceTmp))
 			if err := t.Execute(f, data); err != nil {
 				return err
+			}
+		}
+
+		moduleFolder := app.HttpModuleFolder()
+		pModuleFolder := filepath.Join(moduleFolder, name)
+		util.EnsureDir(pModuleFolder)
+		{
+			// module 目录下 创建 服务包
+
+			// 创建api 我呢见
+			{
+				//  创建api.go
+				file := filepath.Join(pModuleFolder, "api.go")
+				f, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+				t := template.Must(template.New("api").Funcs(funcs).Parse(apiTmp))
+				if err := t.Execute(f, data); err != nil {
+					return err
+				}
+			}
+
+			// 创建api_controller文件
+			{
+				tmpl, err := template.New("controller").Funcs(funcs).Parse(apiControllerTmp)
+				if err != nil {
+					fmt.Println("Failed to parse template:", err)
+					return err
+				}
+				// Generate a file for each interface
+				for _, interfaceName := range interfaceNames {
+					data := map[string]interface{}{
+						"packageName":   name,
+						"appName":       config.GetAppName(),
+						"interfaceName": interfaceName,
+					}
+
+					// Create the output file
+					filePath := filepath.Join(pModuleFolder, "api_"+interfaceName+".go")
+					file, err := os.Create(filePath)
+					if err != nil {
+						fmt.Println("Failed to create file:", err)
+						return errors.New("Failed to create file: " + filePath)
+					}
+					defer file.Close()
+
+					// Execute the template with the data
+					if err := tmpl.Execute(file, data); err != nil {
+						fmt.Println("Failed to execute template:", err)
+						return errors.New("Failed to execute template: " + filePath)
+					}
+					fmt.Printf("Generated file: %s\n", filePath)
+				}
+			}
+
+			//创建 dto 文件
+			{
+				//  创建dto.go
+				file := filepath.Join(pModuleFolder, "dto.go")
+				f, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+				t := template.Must(template.New("dto").Funcs(funcs).Parse(dtoTmp))
+				if err := t.Execute(f, data); err != nil {
+					return err
+				}
+			}
+
+			//创建 mapper 文件
+			{
+				//  创建mapper.go
+				file := filepath.Join(pModuleFolder, "mapper.go")
+				f, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+				t := template.Must(template.New("mapper").Funcs(funcs).Parse(mapperTmp))
+				if err := t.Execute(f, data); err != nil {
+					return err
+				}
 			}
 		}
 		fmt.Println("创建服务成功, 文件夹地址:", filepath.Join(pFolder, folder))
@@ -217,5 +330,55 @@ func New{{.packageName | title}}Service(params ...interface{}) (interface{}, err
 
 func (s *{{.packageName | title}}Service) Foo() string {
     return ""
+}
+`
+
+var apiTmp = `package {{.packageName}}
+import (
+	"github.com/Superdanda/hade/framework/gin"
+)
+
+type {{.packageName | title}}Api struct{}
+
+func RegisterRoutes(r *gin.Engine) error {
+	api := {{.packageName | title}}Api{}
+
+	if !r.IsBind({{.packageName}}.{{.packageName | title}}Key) {
+		r.Bind(&{{.packageName}}.{{.packageName | title}}Provider{})
+	}
+
+	{{.packageName}}Group := r.Group("/{{.packageName}}")
+	{
+        {{range .interfaces}}
+		// {{.}} route
+		{{$.packageName}}Group.POST("/{{.}}", api.{{. | title}})
+		{{end}}
+	}
+	return nil
+}
+`
+
+var apiControllerTmp = `package {{.packageName}}
+import (
+	"github.com/Superdanda/hade/framework/gin"
+)
+
+// {{.interfaceName | title}} handler
+func (api *{{.packageName | title}}Api) {{.interfaceName | title}}(c *gin.Context) {
+	// TODO: Add logic for {{.interfaceName}}
+}
+`
+
+var dtoTmp = `package {{.packageName}}
+
+type {{.packageName | title}}DTO struct {} 
+`
+var mapperTmp = `package {{.packageName}}
+
+func Convert{{.packageName | title}}ToDTO({{.packageName}} *{{.packageName}}.{{.packageName | title}}) *{{.packageName | title}}DTO {
+	if {{.packageName}} == nil {
+		return nil
+	}
+	return &{{.packageName | title}}DTO{}
 }
 `

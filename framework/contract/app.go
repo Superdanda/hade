@@ -32,6 +32,9 @@ type App interface {
 	// AppID 表示当前这个app的唯一id, 可以用于分布式锁等
 	AppId() string
 
+	// HttpModuleFolder  表示业务层的模块路径
+	HttpModuleFolder() string
+
 	LoadAppConfig(mapString map[string]string)
 
 	AppFolder() string
