@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"syscall"
 	"time"
 )
 
@@ -162,27 +161,34 @@ func (p *Proxy) restartBackend() error {
 
 	// 杀死之前的进程
 	if p.backendPid != 0 {
-		process, _ := os.FindProcess(p.backendPid)
-		if process != nil {
-			if runtime.GOOS == "windows" {
-				process.Kill()
-			} else {
-				err := process.Signal(syscall.SIGTERM)
-				if err != nil {
-					return err
-				}
-			}
+		err := util.KillProcess(p.backendPid)
+		if err != nil {
+			return err
 		}
 		p.backendPid = 0
+	}
+	container := p.container
+
+	// 如果 发现之前有遗留并保存到本地的进程也要杀死
+	hadeApp := container.MustMake(contract.AppKey).(contract.App)
+	runtimeFolder := hadeApp.RuntimeFolder()
+	backendPidFile := filepath.Join(runtimeFolder, "backend.pid")
+	if util.Exists(backendPidFile) {
+		backendPid, _ := util.ReadFileToInt(backendPidFile)
+		if backendPid != p.backendPid {
+			util.KillProcess(p.backendPid)
+		}
 	}
 
 	// 设置随机端口，真实后端的端口
 	port := p.devConfig.Backend.Port
+	//尝试删除相关进程避免启动失败
+	util.FindProcessByPortAndKill(port)
 	hadeAddress := fmt.Sprintf(":" + port)
 	// 使用命令行启动后端进程
 
 	// 根据系统设置输出文件名
-	config := p.container.MustMake(contract.ConfigKey).(contract.Config)
+	config := container.MustMake(contract.ConfigKey).(contract.Config)
 	execName := "./" + config.GetAppName()
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
@@ -209,8 +215,21 @@ func (p *Proxy) restartFrontend() error {
 		return nil
 	}
 
+	container := p.container
+	hadeApp := container.MustMake(contract.AppKey).(contract.App)
+	runtimeFolder := hadeApp.RuntimeFolder()
+	frontendPidFile := filepath.Join(runtimeFolder, "frontend.pid")
+	if util.Exists(frontendPidFile) {
+		frontendPid, _ := util.ReadFileToInt(frontendPidFile)
+		if frontendPid != p.frontendPid {
+			util.KillProcess(frontendPid)
+		}
+	}
+
 	// 否则开启npm run serve
 	port := p.devConfig.Frontend.Port
+	//尝试删除相关进程避免启动失败
+	util.FindProcessByPortAndKill(port)
 	path, err := exec.LookPath("npm")
 	if err != nil {
 		return err
@@ -266,12 +285,17 @@ func (p *Proxy) startProxy(startFrontend, startBackend bool) error {
 
 	// 设置反向代理
 	proxyReverse := p.newProxyReverseProxy(frontendURL, backendURL)
+	//尝试删除相关进程避免启动失败
+	util.FindProcessByPortAndKill(p.devConfig.Port)
 	p.proxyServer = &http.Server{
 		Addr:    "127.0.0.1:" + p.devConfig.Port,
 		Handler: proxyReverse,
 	}
 
 	fmt.Println("代理服务启动:", "http://"+p.proxyServer.Addr)
+	//记录pid信息到文件当中
+	recordPidToFile(p)
+
 	// 启动proxy服务
 	err = p.proxyServer.ListenAndServe()
 	if err != nil {
@@ -387,18 +411,25 @@ var devAllCommand = &cobra.Command{
 		if err := proxy.startProxy(true, true); err != nil {
 			return err
 		}
-
-		//记录后端的pid到本地文件
-		container := c.GetContainer()
-		app := container.MustMake(contract.AppKey).(contract.App)
-		storageFolder := app.StorageFolder()
-		pidFile := filepath.Join(storageFolder, "backend.pid")
-		// 将 backendPid 写入文件
-		pid := strconv.Itoa(proxy.backendPid) // 将 pid 转为字符串
-		if err := os.WriteFile(pidFile, []byte(pid), 0666); err != nil {
-			return fmt.Errorf("无法写入 PID 文件: %w", err)
-		}
-
 		return nil
 	},
+}
+
+func recordPidToFile(proxy *Proxy) {
+	container := proxy.container
+	//记录后端的pid到本地文件
+	app := container.MustMake(contract.AppKey).(contract.App)
+	storageFolder := app.RuntimeFolder()
+	backendPidFile := filepath.Join(storageFolder, "backend.pid")
+	frontendPidFile := filepath.Join(storageFolder, "frontend.pid")
+	// 将 backendPid 写入文件
+	backendPid := strconv.Itoa(proxy.backendPid) // 将 pid 转为字符串
+	if err := os.WriteFile(backendPidFile, []byte(backendPid), 0666); err != nil {
+		fmt.Println("无法写入 PID 文件: %w", err)
+	}
+
+	frontendPid := strconv.Itoa(proxy.frontendPid) // 将 pid 转为字符串
+	if err := os.WriteFile(frontendPidFile, []byte(frontendPid), 0666); err != nil {
+		fmt.Println("无法写入 PID 文件: %w", err)
+	}
 }
