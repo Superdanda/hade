@@ -2,8 +2,18 @@ package demo
 
 import (
 	"database/sql"
+	"github.com/Superdanda/hade/app/provider/demo"
+	"github.com/Superdanda/hade/framework/contract"
 	"time"
 )
+
+func init() {
+}
+
+func TypeRegister(typeRegister contract.TypeRegisterService) {
+	typeRegister.Register("UserThree", demo.UserThree{})
+	typeRegister.Register("UserTwo", demo.UserTwo{})
+}
 
 type UserModel struct {
 	UserId int

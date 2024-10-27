@@ -22,6 +22,7 @@ func Routes(core *gin.Engine) {
 	core.Use(static.Serve("/", static.LocalFile("./dist", false)))
 
 	err := demo.Register(core)
+
 	if err != nil {
 		return
 	}

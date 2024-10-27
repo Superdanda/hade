@@ -35,7 +35,7 @@ var cronCommand = &cobra.Command{
 	Short: "定时任务控制命令",
 	Long:  "定时任务控制命令,包含展示、重启、启动、常驻状态、停止等命令",
 	RunE: func(c *cobra.Command, args []string) error {
-		if len(args) != 0 {
+		if len(args) == 0 {
 			c.Help()
 		}
 		return nil

@@ -14,6 +14,7 @@ import (
 	"github.com/Superdanda/hade/framework/provider/orm"
 	"github.com/Superdanda/hade/framework/provider/redis"
 	"github.com/Superdanda/hade/framework/provider/ssh"
+	"github.com/Superdanda/hade/framework/provider/type_register"
 )
 
 func main() {
@@ -32,6 +33,7 @@ func main() {
 	container.Bind(&redis.RedisProvider{})
 	container.Bind(&cache.HadeCacheProvider{})
 	container.Bind(&ssh.SSHProvider{})
+	container.Bind(&type_register.TypeRegisterProvider{})
 
 	// 将HTTP引擎初始化,并且作为服务提供者绑定到服务容器中
 	if engine, err := http.NewHttpEngine(container); err == nil {

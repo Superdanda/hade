@@ -20,6 +20,7 @@ func AddKernelCommands(root *cobra.Command) {
 	root.AddCommand(initNewCommand())
 	root.AddCommand(initSwaggerCommand())
 	root.AddCommand(initDeployCommand())
+	root.AddCommand(initDatabaseCommand())
 }
 
 // 封装通用的命令执行器
