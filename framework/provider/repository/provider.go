@@ -8,8 +8,7 @@ import (
 type RepositoryProvider struct{}
 
 func (r RepositoryProvider) Register(container framework.Container) framework.NewInstance {
-	//TODO implement me
-	panic("implement me")
+	return NewHadeRepositoryService
 }
 
 func (r RepositoryProvider) Boot(container framework.Container) error {

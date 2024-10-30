@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/Superdanda/hade/app/http/module/demo"
+	"github.com/Superdanda/hade/app/http/module/user"
 	"github.com/Superdanda/hade/framework/contract"
 	"github.com/Superdanda/hade/framework/gin"
 	ginSwagger "github.com/Superdanda/hade/framework/middleware/gin-swagger"
@@ -22,6 +23,8 @@ func Routes(core *gin.Engine) {
 	core.Use(static.Serve("/", static.LocalFile("./dist", false)))
 
 	err := demo.Register(core)
+
+	err = user.RegisterRoutes(core)
 
 	if err != nil {
 		return

@@ -1,1 +1,4 @@
 driver: memory
+
+repository:
+  expire: 6h

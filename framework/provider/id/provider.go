@@ -1,12 +1,15 @@
 package id
 
-import "github.com/Superdanda/hade/framework"
+import (
+	"github.com/Superdanda/hade/framework"
+	"github.com/Superdanda/hade/framework/contract"
+)
 
 type HadeIDProvider struct {
 }
 
 func (h HadeIDProvider) Register(container framework.Container) framework.NewInstance {
-	return NewHadeIDService
+	return nil
 }
 
 func (h HadeIDProvider) Boot(container framework.Container) error {
