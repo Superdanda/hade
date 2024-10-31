@@ -30,7 +30,7 @@ func NewRedisCache(params ...interface{}) (interface{}, error) {
 
 	// 获取redis服务配置，并且实例化redis.Client
 	redisService := container.MustMake(contract.RedisKey).(contract.RedisService)
-	client, err := redisService.GetClient(redis.WithConfigPath("cache"))
+	client, err := redisService.GetClient(redis.WithConfigPath("redis"))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,8 @@ func (r *RedisCache) Set(ctx context.Context, key string, val string, timeout ti
 
 // SetObj 设置某个key和对象到缓存, 对象必须实现 https://pkg.go.dev/encoding#BinaryMarshaler
 func (r *RedisCache) SetObj(ctx context.Context, key string, val interface{}, timeout time.Duration) error {
-	return r.client.Set(ctx, key, val, timeout).Err()
+	set := r.client.Set(ctx, key, val, timeout)
+	return set.Err()
 }
 
 // SetMany 设置多个key和值到缓存

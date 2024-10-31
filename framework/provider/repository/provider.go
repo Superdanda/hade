@@ -16,7 +16,7 @@ func (r RepositoryProvider) Boot(container framework.Container) error {
 }
 
 func (r RepositoryProvider) IsDefer() bool {
-	return true
+	return false
 }
 
 func (r RepositoryProvider) Params(container framework.Container) []interface{} {

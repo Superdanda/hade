@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -23,4 +24,12 @@ type User struct {
 	Password  string    `gorm:"column:password;type:varchar(255);comment:密码;not null" json:"password"`
 	Email     string    `gorm:"column:email;type:varchar(255);comment:邮箱;not null" json:"email"`
 	CreatedAt time.Time `gorm:"column:created_at;type:datetime;comment:创建时间;not null;<-:create" json:"createdAt"`
+}
+
+func (u *User) MarshalBinary() ([]byte, error) {
+	return json.Marshal(u)
+}
+
+func (u *User) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, u)
 }

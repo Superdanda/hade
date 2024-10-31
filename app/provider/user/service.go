@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/contract"
-	"github.com/Superdanda/hade/framework/provider/infrastructure"
 )
 
 type UserService struct {
@@ -30,7 +29,7 @@ func (s *UserService) SaveUser(ctx context.Context, user *User) error {
 
 func NewUserService(params ...interface{}) (interface{}, error) {
 	container := params[0].(framework.Container)
-	infrastructureService := container.MustMake(contract.InfrastructureKey).(infrastructure.Service)
+	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
 	ormRepository := infrastructureService.GetModuleOrmRepository(UserKey).(Repository)
 	return &UserService{container: container, repository: ormRepository}, nil
 }

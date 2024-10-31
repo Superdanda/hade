@@ -6,6 +6,7 @@ import (
 	userModule "github.com/Superdanda/hade/app/provider/user"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/contract"
+	"github.com/Superdanda/hade/framework/provider/repository"
 	"gorm.io/gorm"
 )
 
@@ -16,15 +17,18 @@ type UserRepository struct {
 	userModule.Repository
 }
 
-func NewUserRepository(container framework.Container) contract.OrmRepository[userModule.User, int64] {
+func NewOrmUserRepositoryAndRegister(container framework.Container) {
+	//获取必要服务对象
 	connectService := container.MustMake(database_connect.DatabaseConnectKey).(database_connect.Service)
+	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
+	repositoryService := container.MustMake(contract.RepositoryKey).(contract.RepositoryService)
+
 	connect := connectService.DefaultDatabaseConnect()
 	userOrmService := &UserRepository{container: container, db: connect}
-	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
 	infrastructureService.RegisterOrmRepository(userModule.UserKey, userOrmService)
 
-	//repository.RegisterRepository[userModule.User, int64](userModule.UserKey,)
-	return userOrmService
+	//注册通用仓储对象
+	repository.RegisterRepository[userModule.User, int64](repositoryService, userModule.UserKey, userOrmService)
 }
 
 func (u *UserRepository) SaveToDB(entity *userModule.User) error {
@@ -38,7 +42,7 @@ func (u *UserRepository) FindByIDFromDB(id int64) (*userModule.User, error) {
 	return user, nil
 }
 
-func (u *UserRepository) FindByID64sFromDB(ids []int64) ([]*userModule.User, error) {
+func (u *UserRepository) FindByIDsFromDB(ids []int64) ([]*userModule.User, error) {
 	var users []*userModule.User
 	// 使用 GORM 的 Where 方法查询用户 ID 在给定 ID 列表中的记录
 	if err := u.db.Where("id IN ?", ids).Find(&users).Error; err != nil {
@@ -126,16 +130,18 @@ func (u *UserRepository) GetFieldValueFunc(fieldName string) (func(entity *userM
 }
 
 func (u *UserRepository) Save(ctx context.Context, user *userModule.User) error {
-	repository := u.container.MustMake(contract.RepositoryKey).(contract.Repository[userModule.User, int64])
-	if err := repository.Save(ctx, userModule.UserKey, user); err != nil {
+	repositoryService := u.container.MustMake(contract.RepositoryKey).(contract.RepositoryService)
+	genericRepository := repositoryService.GetGenericRepositoryByKey(userModule.UserKey).(contract.GenericRepository[userModule.User, int64])
+	if err := genericRepository.Save(ctx, user); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (u *UserRepository) FindById(ctx context.Context, id int64) (*userModule.User, error) {
-	repository := u.container.MustMake(contract.RepositoryKey).(contract.Repository[userModule.User, int64])
-	byID, err := repository.FindByID(ctx, userModule.UserKey, id)
+	repositoryService := u.container.MustMake(contract.RepositoryKey).(contract.RepositoryService)
+	genericRepository := repositoryService.GetGenericRepositoryByKey(userModule.UserKey).(contract.GenericRepository[userModule.User, int64])
+	byID, err := genericRepository.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}

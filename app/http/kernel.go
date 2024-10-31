@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/Superdanda/hade/app/infrastructure"
 	"github.com/Superdanda/hade/app/provider/database_connect"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/gin"
@@ -13,8 +14,7 @@ func NewHttpEngine(container *framework.HadeContainer) (*gin.Engine, error) {
 	// 默认启动一个Web引擎
 	r := gin.Default()
 	r.SetContainer(container)
-	// 业务绑定路由操作
-	Routes(r)
+
 	// 返回绑定路由后的Web引擎
 
 	// 对业务模型进行注册，通过注册名获取业务模型类型信息
@@ -23,5 +23,10 @@ func NewHttpEngine(container *framework.HadeContainer) (*gin.Engine, error) {
 	//绑定服务
 	container.Bind(&database_connect.DatabaseConnectProvider{})
 
+	//注册 infrastructure 包的实例
+	infrastructure.NewOrmRepositoryAndRegister(container)
+
+	// 业务绑定路由操作
+	Routes(r)
 	return r, nil
 }

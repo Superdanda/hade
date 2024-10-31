@@ -1,4 +1,6 @@
-driver: memory
+driver: redis
+
+
 
 repository:
   expire: 6h

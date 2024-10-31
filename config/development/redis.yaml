@@ -4,4 +4,4 @@ write_timeout: 2s # 写超时
 host: 10.10.103.131 # ip地址
 port: 6379 # 端口
 password: Worktask@Redis2023
-db: 0 #db
+db: 6 #db

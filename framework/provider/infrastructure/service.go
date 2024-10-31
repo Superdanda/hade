@@ -2,18 +2,18 @@ package infrastructure
 
 import (
 	"github.com/Superdanda/hade/framework"
-	"github.com/Superdanda/hade/framework/contract"
 	_ "github.com/Superdanda/hade/framework/provider/repository"
 )
 
 type Service struct {
-	container framework.Container
-	contract.InfrastructureService
+	container        framework.Container
 	ormRepositoryMap map[string]interface{}
 }
 
 func NewInfrastructureService(params ...interface{}) (interface{}, error) {
-	return &Service{container: params[0].(framework.Container)}, nil
+	infrastructureService := &Service{container: params[0].(framework.Container),
+		ormRepositoryMap: make(map[string]interface{})}
+	return infrastructureService, nil
 }
 
 func (i *Service) GetModuleOrmRepository(moduleName string) interface{} {

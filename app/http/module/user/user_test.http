@@ -1,0 +1,18 @@
+### GET request to example server
+POST http://127.0.0.1:8888/user/get
+Content-Type: application/json
+
+{
+  "id": "1"
+}
+
+
+### POST request to example server
+POST http://127.0.0.1:8888/user/save
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "nickname": "Test",
+  "email": "test@example.com"
+}

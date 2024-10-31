@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func RegisterRepository[T any, ID comparable](service contract.RepositoryService, key string, ormRepository interface{}) {
+func RegisterRepository[T any, ID comparable](service contract.RepositoryService, key string, ormRepository interface{}) *HadeGenericRepository[T, ID] {
 	container := service.GetContainer()
 	cacheService := container.MustMake(contract.CacheKey).(contract.CacheService)
 	configService := container.MustMake(contract.ConfigKey).(contract.Config)
@@ -32,6 +32,7 @@ func RegisterRepository[T any, ID comparable](service contract.RepositoryService
 		ormRepository.(contract.OrmRepository[T, ID]),
 	)
 	service.GetGenericRepositoryMap()[key] = genericRepository
+	return genericRepository
 }
 
 type HadeRepositoryService struct {
@@ -41,9 +42,6 @@ type HadeRepositoryService struct {
 }
 
 func NewHadeRepositoryService(params ...interface{}) (interface{}, error) {
-	if len(params) < 2 {
-		return nil, errors.New("insufficient parameters")
-	}
 	container, ok := params[0].(framework.Container)
 	if !ok {
 		return nil, errors.New("invalid container parameter")
