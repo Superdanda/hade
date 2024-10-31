@@ -1,0 +1,80 @@
+package infrastructure
+
+import (
+	"context"
+	"{{.appName}}/app/provider/database_connect"
+	{{.ModuleAlias}} "{{.ModulePath}}"
+	"github.com/Superdanda/hade/framework"
+	"github.com/Superdanda/hade/framework/contract"
+	"github.com/Superdanda/hade/framework/provider/repository"
+	"gorm.io/gorm"
+)
+
+type {{.StructName}}Repository struct {
+	container framework.Container
+	db        *gorm.DB
+	contract.OrmRepository[{{.ModuleAlias}}.{{.EntityName}}, {{.IDType}}]
+	{{.ModuleAlias}}.Repository
+}
+
+func NewOrm{{.StructName}}RepositoryAndRegister(container framework.Container) {
+	// 获取必要的服务对象
+	connectService := container.MustMake(database_connect.DatabaseConnectKey).(database_connect.Service)
+	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
+	repositoryService := container.MustMake(contract.RepositoryKey).(contract.RepositoryService)
+
+	connect := connectService.DefaultDatabaseConnect()
+	{{.VariableName}}OrmService := &{{.StructName}}Repository{container: container, db: connect}
+	infrastructureService.RegisterOrmRepository({{.ModuleAlias}}.{{.EntityKey}}, {{.VariableName}}OrmService)
+
+	// 注册通用仓储对象
+	repository.RegisterRepository[{{.ModuleAlias}}.{{.EntityName}}, {{.IDType}}](repositoryService, {{.ModuleAlias}}.{{.EntityKey}}, {{.VariableName}}OrmService)
+}
+
+func (u *{{.StructName}}Repository) SaveToDB(entity *{{.ModuleAlias}}.{{.EntityName}}) error {
+	return u.db.Save(entity).Error
+}
+
+func (u *{{.StructName}}Repository) FindByIDFromDB(id {{.IDType}}) (*{{.ModuleAlias}}.{{.EntityName}}, error) {
+	entity := &{{.ModuleAlias}}.{{.EntityName}}{}
+	err := u.db.First(entity, id).Error
+	return entity, err
+}
+
+func (u *{{.StructName}}Repository) FindByIDsFromDB(ids []{{.IDType}}) ([]*{{.ModuleAlias}}.{{.EntityName}}, error) {
+	var entities []*{{.ModuleAlias}}.{{.EntityName}}
+	err := u.db.Where("id IN ?", ids).Find(&entities).Error
+	return entities, err
+}
+
+func (u *{{.StructName}}Repository) GetPrimaryKey(entity *{{.ModuleAlias}}.{{.EntityName}}) {{.IDType}} {
+	return entity.ID
+}
+
+func (u *{{.StructName}}Repository) GetBaseField() string {
+	return {{.ModuleAlias}}.{{.EntityKey}}
+}
+
+func (u *{{.StructName}}Repository) GetFieldQueryFunc(fieldName string) (func(value string) ([]*{{.ModuleAlias}}.{{.EntityName}}, error), bool) {
+	switch fieldName {
+	// 根据您的实际情况添加字段查询函数
+	default:
+		return nil, false
+	}
+}
+
+func (u *{{.StructName}}Repository) GetFieldInQueryFunc(fieldName string) (func(values []string) ([]*{{.ModuleAlias}}.{{.EntityName}}, error), bool) {
+	switch fieldName {
+	// 根据您的实际情况添加字段批量查询函数
+	default:
+		return nil, false
+	}
+}
+
+func (u *{{.StructName}}Repository) GetFieldValueFunc(fieldName string) (func(entity *{{.ModuleAlias}}.{{.EntityName}}) string, bool) {
+	switch fieldName {
+	// 根据您的实际情况添加获取字段值的函数
+	default:
+		return nil, false
+	}
+}

@@ -40,4 +40,10 @@ type App interface {
 	AppFolder() string
 	// DeployFolder 部署文件夹
 	DeployFolder() string
+
+	// InfrastructureFolder 业务层 基础服务设施目录
+	InfrastructureFolder() string
+
+	// TemplateFolder 模板文件夹
+	TemplateFolder() string
 }

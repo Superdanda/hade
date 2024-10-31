@@ -105,6 +105,14 @@ func (h HadeApp) HttpModuleFolder() string {
 	return deployFolder
 }
 
+func (h HadeApp) InfrastructureFolder() string {
+	return filepath.Join(h.AppFolder(), "infrastructure")
+}
+
+func (h HadeApp) TemplateFolder() string {
+	return filepath.Join(h.BaseFolder(), "framework", "template")
+}
+
 func (h HadeApp) AppId() string {
 	return h.appId
 }

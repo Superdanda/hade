@@ -20,6 +20,7 @@ import (
 func initProviderCommand() *cobra.Command {
 	providerCommand.AddCommand(providerCreateCommand)
 	providerCommand.AddCommand(providerListCommand)
+	providerCommand.AddCommand(providerRepositoryCommand)
 	return providerCommand
 }
 
@@ -281,6 +282,100 @@ var providerCreateCommand = &cobra.Command{
 	},
 }
 
+var providerRepositoryCommand = &cobra.Command{
+	Use:   "repository",
+	Short: "创建仓储层实现",
+	RunE: func(c *cobra.Command, args []string) error {
+		container := c.GetContainer()
+		fmt.Println("创建一个仓储层实现")
+		var name string
+		var idType string
+		{
+			prompt := &survey.Input{
+				Message: "请输入仓储层实现名称（例如：user）：",
+			}
+			err := survey.AskOne(prompt, &name)
+			if err != nil {
+				return err
+			}
+		}
+
+		name = strings.TrimSpace(name)
+		if name == "" {
+			fmt.Println("服务名称不能为空")
+			return nil
+		}
+
+		{
+			prompt := &survey.Input{
+				Message: "请输入仓储层存储模型的ID类型（默认为：int64）：",
+			}
+			err := survey.AskOne(prompt, &idType)
+			if err != nil {
+				return err
+			}
+		}
+		idType = strings.TrimSpace(idType)
+		if idType == "" {
+			idType = "int64"
+		}
+
+		// 检查服务是否存在
+		// 这里可以添加检查逻辑，防止重复创建
+
+		app := container.MustMake(contract.AppKey).(contract.App)
+		config := container.MustMake(contract.ConfigKey).(contract.Config)
+		appName := config.GetAppName()
+		infrastructureDir := app.InfrastructureFolder()
+
+		// 准备模板数据
+		data := map[string]interface{}{
+			"ModuleAlias":  fmt.Sprintf("%sModule", name),
+			"ModulePath":   fmt.Sprintf("%s/app/provider/%v", appName, name),
+			"StructName":   strings.Title(name),
+			"EntityName":   strings.Title(name),
+			"EntityKey":    fmt.Sprintf("%sKey", strings.Title(name)),
+			"VariableName": name,
+			"AppName":      appName,
+			"IDType":       idType,
+		}
+
+		// 定义模板函数
+		funcs := template.FuncMap{
+			"title": strings.Title,
+			"lower": strings.ToLower,
+		}
+
+		// 解析模板文件
+		//tmplPath := filepath.Join(app.TemplateFolder(), "repository_template.go.tmpl")
+		tmpl, err := template.New("repository").Funcs(funcs).Parse(repositoryTmp)
+		if err != nil {
+			return err
+		}
+
+		// 确定生成文件的路径
+		infrastructurePath := filepath.Join(infrastructureDir, fmt.Sprintf("%s.go", name))
+		if err := os.MkdirAll(infrastructureDir, 0755); err != nil {
+			return err
+		}
+
+		// 创建并写入文件
+		file, err := os.Create(infrastructurePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		err = tmpl.Execute(file, data)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("成功创建服务：%s，文件位于：%s\n", name, infrastructurePath)
+		return nil
+	},
+}
+
 func generateControllers(node *RouteNode, pathParts []string, tmpl *template.Template, data map[string]interface{}, moduleFolder string) error {
 	// 更新路径部分
 	newPathParts := append(pathParts, node.Path)
@@ -506,5 +601,85 @@ func Convert{{.packageName | title}}ToDTO({{.packageName}} *{{.packageName}}.{{.
 		return nil
 	}
 	return &{{.packageName | title}}DTO{}
+}
+`
+
+var repositoryTmp = `package infrastructure
+import (
+	"{{.AppName}}/app/provider/database_connect"
+	{{.ModuleAlias}} "{{.ModulePath}}"
+	"github.com/Superdanda/hade/framework"
+	"github.com/Superdanda/hade/framework/contract"
+	"github.com/Superdanda/hade/framework/provider/repository"
+	"gorm.io/gorm"
+)
+
+type {{.StructName}}Repository struct {
+	container framework.Container
+	db        *gorm.DB
+	contract.OrmRepository[{{.ModuleAlias}}.{{.EntityName}}, {{.IDType}}]
+	{{.ModuleAlias}}.Repository
+}
+
+func NewOrm{{.StructName}}RepositoryAndRegister(container framework.Container) {
+	// 获取必要的服务对象
+	connectService := container.MustMake(database_connect.DatabaseConnectKey).(database_connect.Service)
+	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
+	repositoryService := container.MustMake(contract.RepositoryKey).(contract.RepositoryService)
+
+	connect := connectService.DefaultDatabaseConnect()
+	{{.VariableName}}OrmService := &{{.StructName}}Repository{container: container, db: connect}
+	infrastructureService.RegisterOrmRepository({{.ModuleAlias}}.{{.EntityKey}}, {{.VariableName}}OrmService)
+
+	// 注册通用仓储对象
+	repository.RegisterRepository[{{.ModuleAlias}}.{{.EntityName}}, {{.IDType}}](repositoryService, {{.ModuleAlias}}.{{.EntityKey}}, {{.VariableName}}OrmService)
+}
+
+func (u *{{.StructName}}Repository) SaveToDB(entity *{{.ModuleAlias}}.{{.EntityName}}) error {
+	return u.db.Save(entity).Error
+}
+
+func (u *{{.StructName}}Repository) FindByIDFromDB(id {{.IDType}}) (*{{.ModuleAlias}}.{{.EntityName}}, error) {
+	entity := &{{.ModuleAlias}}.{{.EntityName}}{}
+	err := u.db.First(entity, id).Error
+	return entity, err
+}
+
+func (u *{{.StructName}}Repository) FindByIDsFromDB(ids []{{.IDType}}) ([]*{{.ModuleAlias}}.{{.EntityName}}, error) {
+	var entities []*{{.ModuleAlias}}.{{.EntityName}}
+	err := u.db.Where("id IN ?", ids).Find(&entities).Error
+	return entities, err
+}
+
+func (u *{{.StructName}}Repository) GetPrimaryKey(entity *{{.ModuleAlias}}.{{.EntityName}}) {{.IDType}} {
+	return entity.ID
+}
+
+func (u *{{.StructName}}Repository) GetBaseField() string {
+	return {{.ModuleAlias}}.{{.EntityKey}}
+}
+
+func (u *{{.StructName}}Repository) GetFieldQueryFunc(fieldName string) (func(value string) ([]*{{.ModuleAlias}}.{{.EntityName}}, error), bool) {
+	switch fieldName {
+	// 根据您的实际情况添加字段查询函数
+	default:
+		return nil, false
+	}
+}
+
+func (u *{{.StructName}}Repository) GetFieldInQueryFunc(fieldName string) (func(values []string) ([]*{{.ModuleAlias}}.{{.EntityName}}, error), bool) {
+	switch fieldName {
+	// 根据您的实际情况添加字段批量查询函数
+	default:
+		return nil, false
+	}
+}
+
+func (u *{{.StructName}}Repository) GetFieldValueFunc(fieldName string) (func(entity *{{.ModuleAlias}}.{{.EntityName}}) string, bool) {
+	switch fieldName {
+	// 根据您的实际情况添加获取字段值的函数
+	default:
+		return nil, false
+	}
 }
 `

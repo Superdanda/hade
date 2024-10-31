@@ -29,9 +29,11 @@ func (s *UserService) SaveUser(ctx context.Context, user *User) error {
 
 func NewUserService(params ...interface{}) (interface{}, error) {
 	container := params[0].(framework.Container)
+	userService := &UserService{container: container}
 	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
 	ormRepository := infrastructureService.GetModuleOrmRepository(UserKey).(Repository)
-	return &UserService{container: container, repository: ormRepository}, nil
+	userService.repository = ormRepository
+	return userService, nil
 }
 
 func (s *UserService) Foo() string {
