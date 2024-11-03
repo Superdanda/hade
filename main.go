@@ -10,9 +10,11 @@ import (
 	"github.com/Superdanda/hade/framework/provider/distributed"
 	"github.com/Superdanda/hade/framework/provider/env"
 	"github.com/Superdanda/hade/framework/provider/infrastructure"
+	"github.com/Superdanda/hade/framework/provider/kafka"
 	"github.com/Superdanda/hade/framework/provider/kernel"
 	"github.com/Superdanda/hade/framework/provider/log"
 	"github.com/Superdanda/hade/framework/provider/orm"
+	"github.com/Superdanda/hade/framework/provider/queue"
 	"github.com/Superdanda/hade/framework/provider/redis"
 	"github.com/Superdanda/hade/framework/provider/repository"
 	"github.com/Superdanda/hade/framework/provider/ssh"
@@ -38,7 +40,8 @@ func main() {
 	container.Bind(&type_register.TypeRegisterProvider{})
 	container.Bind(&infrastructure.InfrastructureProvider{})
 	container.Bind(&repository.RepositoryProvider{})
-
+	container.Bind(&kafka.KafkaProvider{})
+	container.Bind(&queue.QueueProvider{})
 	// 将HTTP引擎初始化,并且作为服务提供者绑定到服务容器中
 	if engine, err := http.NewHttpEngine(container); err == nil {
 		container.Bind(&kernel.HadeKernelProvider{HttpEngine: engine})

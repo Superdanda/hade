@@ -9,17 +9,17 @@ type HadeTestingEnvProvider struct {
 	Folder string
 }
 
-// Register registe a new function for make a service instance
+// Register registe a new function for make a services instance
 func (provider *HadeTestingEnvProvider) Register(c framework.Container) framework.NewInstance {
 	return NewHadeTestingEnv
 }
 
-// Boot will called when the service instantiate
+// Boot will called when the services instantiate
 func (provider *HadeTestingEnvProvider) Boot(c framework.Container) error {
 	return nil
 }
 
-// IsDefer define whether the service instantiate when first make or register
+// IsDefer define whether the services instantiate when first make or register
 func (provider *HadeTestingEnvProvider) IsDefer() bool {
 	return false
 }
@@ -29,7 +29,7 @@ func (provider *HadeTestingEnvProvider) Params(c framework.Container) []interfac
 	return []interface{}{}
 }
 
-// / Name define the name for this service
+// / Name define the name for this services
 func (provider *HadeTestingEnvProvider) Name() string {
 	return contract.EnvKey
 }
