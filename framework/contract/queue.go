@@ -28,31 +28,8 @@ type QueueService interface {
 }
 
 type Event interface {
-	EventID() int64        // 事件唯一标识
+	GetEventKey() string   // 事件唯一标识
 	EventTopic() string    // 事件类型
 	EventTimestamp() int64 // 事件发生时间
 	Payload() interface{}  // 事件负载
-}
-
-type BaseEvent struct {
-	ID        int64       `json:"id"`
-	Topic     string      `json:"topic"`
-	Timestamp int64       `json:"timestamp"`
-	Data      interface{} `json:"data"`
-}
-
-func (e *BaseEvent) EventTopic() string {
-	return e.Topic
-}
-
-func (e *BaseEvent) EventID() int64 {
-	return e.ID
-}
-
-func (e *BaseEvent) EventTimestamp() int64 {
-	return e.Timestamp
-}
-
-func (e *BaseEvent) Payload() interface{} {
-	return e.Data
 }

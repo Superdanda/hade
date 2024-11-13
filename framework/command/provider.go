@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -21,6 +22,7 @@ func initProviderCommand() *cobra.Command {
 	providerCommand.AddCommand(providerCreateCommand)
 	providerCommand.AddCommand(providerListCommand)
 	providerCommand.AddCommand(providerRepositoryCommand)
+	providerCommand.AddCommand(providerInterfaceCommand)
 	return providerCommand
 }
 
@@ -45,6 +47,182 @@ var providerListCommand = &cobra.Command{
 		for _, line := range nameList {
 			println(line)
 		}
+		return nil
+	},
+}
+
+var providerInterfaceCommand = &cobra.Command{
+	Use:     "interface",
+	Aliases: []string{"interface"},
+	Short:   "创建应用接口",
+	RunE: func(c *cobra.Command, args []string) error {
+		container := c.GetContainer()
+		fmt.Println("创建一个应用接口")
+		var name, folder string
+		interfaceNames := &RouteNode{}
+
+		{
+			prompt := &survey.Input{
+				Message: "请输入接口模块名称(http/module目录下的文件夹名称)：",
+			}
+			err := survey.AskOne(prompt, &name)
+			if err != nil {
+				return err
+			}
+		}
+
+		{
+			prompt := &survey.Input{
+				Message: "请输入接口模块所在目录名称(默认: 接口模块名称):",
+			}
+			err := survey.AskOne(prompt, &folder)
+			if err != nil {
+				return err
+			}
+		}
+
+		if folder == "" {
+			folder = name
+		}
+
+		// 收集用户输入并填充嵌套映射
+		for {
+			prompt := &survey.Input{
+				Message: "请输入接口路径（格式：/user/login，直接按回车结束输入）：",
+			}
+
+			var input string
+			err := survey.AskOne(prompt, &input)
+			if err != nil {
+				return err
+			}
+
+			// 如果用户直接按回车，结束输入
+			if strings.TrimSpace(input) == "" {
+				fmt.Println("接口输入结束")
+				break
+			}
+
+			// 解析输入的路径为路径部分
+			pathParts := strings.Split(strings.TrimPrefix(input, "/"), "/")
+			if len(pathParts) == 0 {
+				fmt.Println("路径格式错误，请输入正确格式：/节点/接口")
+				continue
+			}
+
+			// 将路径部分插入到路由树中
+			insertIntoRouteTree(pathParts, []string{}, interfaceNames)
+			fmt.Printf("已添加接口：%s\n", input)
+		}
+		interfaceNames.NeedExtra = false
+
+		// 打印所有添加的接口（测试用）
+		printRouteTree(interfaceNames, 0)
+
+		// 模板数据
+		config := container.MustMake(contract.ConfigKey).(contract.Config)
+		data := map[string]interface{}{
+			"appName":     config.GetAppName(),
+			"packageName": name,
+			"interfaces":  interfaceNames,
+			"structName":  name,
+		}
+		// 创建title这个模版方法
+		funcs := template.FuncMap{
+			"title": strings.Title,
+			"dict": func(values ...interface{}) (map[string]interface{}, error) {
+				if len(values)%2 != 0 {
+					return nil, fmt.Errorf("invalid dict call: missing key or value")
+				}
+				dict := make(map[string]interface{}, len(values)/2)
+				for i := 0; i < len(values); i += 2 {
+					key, ok := values[i].(string)
+					if !ok {
+						return nil, fmt.Errorf("dict keys must be strings")
+					}
+					dict[key] = values[i+1]
+				}
+				return dict, nil
+			},
+			"len": func(v interface{}) int {
+				return reflect.ValueOf(v).Len()
+			},
+			"camelToPath": func(s string) string {
+				re := regexp.MustCompile("([a-z0-9])([A-Z])")
+				result := re.ReplaceAllString(s, "$1/$2")
+				return "/" + strings.ToLower(result)
+			},
+		}
+
+		if interfaceNames.Children == nil || len(interfaceNames.Children) == 0 {
+			return nil
+		}
+
+		app := container.MustMake(contract.AppKey).(contract.App)
+		moduleFolder := app.HttpModuleFolder()
+		pModuleFolder := filepath.Join(moduleFolder, name)
+		util.EnsureDir(pModuleFolder)
+		{
+			// module 目录下 创建 服务包
+
+			// 创建api 我呢见
+			{
+				// 创建 api.go
+				file := filepath.Join(pModuleFolder, "api.go")
+				f, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+				data["interfaces"] = interfaceNames // 传递嵌套的接口名称映射
+				t := template.Must(template.New("api").Funcs(funcs).Parse(apiTmp))
+				if err := t.Execute(f, data); err != nil {
+					return err
+				}
+			}
+
+			// 创建api_controller文件
+			{
+				tmpl := template.Must(template.New("controller").Funcs(funcs).Parse(apiControllerTmp))
+				data["packageName"] = name
+				data["structName"] = name
+
+				// 递归生成控制器文件
+				if err := generateControllers(interfaceNames, []string{}, tmpl, data, pModuleFolder); err != nil {
+					fmt.Println("生成控制器失败:", err)
+					return err
+				}
+			}
+
+			//创建 dto 文件
+			{
+				//  创建dto.go
+				file := filepath.Join(pModuleFolder, "dto.go")
+				f, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+				t := template.Must(template.New("dto").Funcs(funcs).Parse(dtoTmp))
+				if err := t.Execute(f, data); err != nil {
+					return err
+				}
+			}
+
+			//创建 mapper 文件
+			{
+				//  创建mapper.go
+				file := filepath.Join(pModuleFolder, "mapper.go")
+				f, err := os.Create(file)
+				if err != nil {
+					return err
+				}
+				t := template.Must(template.New("mapper").Funcs(funcs).Parse(mapperTmp))
+				if err := t.Execute(f, data); err != nil {
+					return err
+				}
+			}
+		}
+
+		fmt.Println("创建接口文件成功")
 		return nil
 	},
 }
@@ -167,6 +345,10 @@ var providerCreateCommand = &cobra.Command{
 			},
 			"len": func(v interface{}) int {
 				return reflect.ValueOf(v).Len()
+			},
+			"camelToPath": func(s string) string {
+				re := regexp.MustCompile("([A-Z])")
+				return "/" + re.ReplaceAllString(s, "/$1")
 			},
 		}
 
@@ -584,7 +766,19 @@ import (
     "github.com/Superdanda/hade/framework/gin"
 )
 
+type {{.methodName}}Param struct {}
+
 // {{.methodName}} handler
+// @Summary 输入你的接口总结
+// @Description 输入你的接口总结详情
+// @ID 接口Id
+// @Tags 接口tag
+// @Accept json
+// @Produce json
+// @Param {{.methodName}}Param body {{.methodName}}Param true "输入参数描述"
+// @Success 200 {object} result.Result "返回成功的流程定义数据"
+// @Failure 500 {object} result.Result "返回失败的流程定义数据"
+// @Router {{.methodName | camelToPath}} [post]
 func (api *{{.structName | title}}Api) {{.methodName}}(c *gin.Context) {
     // TODO: Implement {{.methodName}}
 }

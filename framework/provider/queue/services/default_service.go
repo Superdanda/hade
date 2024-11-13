@@ -152,10 +152,15 @@ func (m *MemoryQueueService) Close() error {
 
 type DefaultBaseEvent struct {
 	ID        int64     `gorm:"primaryKey;type:bigint" json:"id"`
+	EventKey  string    `gorm:"type:varchar(255);not null" json:"event_key"`
 	Topic     string    `gorm:"type:varchar(50);not null" json:"topic"`
 	Timestamp int64     `gorm:"autoCreateTime:milli" json:"timestamp"`
 	Data      string    `gorm:"type:json" json:"data"` // 将数据存储为 JSON 格式
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+}
+
+func (d *DefaultBaseEvent) GetEventKey() string {
+	return d.EventKey
 }
 
 func (d *DefaultBaseEvent) EventID() int64 {

@@ -17,13 +17,20 @@ type HadeKafka struct {
 	lock           *sync.RWMutex
 }
 
-func NewHadeKafka(params ...interface{}) (interface{}, error) {
-	hadeKafka := &HadeKafka{}
-	container := params[0]
-	hadeKafka.container = container.(framework.Container)
-	hadeKafka.clients = make(map[string]sarama.Client)
-	hadeKafka.lock = new(sync.RWMutex)
-	return hadeKafka, nil
+func (k HadeKafka) GetClientDefault() (sarama.Client, error) {
+	// 读取默认配置
+	config := GetBaseConfig(k.container)
+	return k.getClientByConfig(config)
+}
+
+func (k HadeKafka) GetConsumerDefault() (sarama.Consumer, error) {
+	config := GetBaseConfig(k.container)
+	return k.getConsumer(k.GetClientDefault, config)
+}
+
+func (k HadeKafka) GetConsumerGroupDefault(groupID string, topics []string) (sarama.ConsumerGroup, error) {
+	config := GetBaseConfig(k.container)
+	return k.getConsumerGroup(k.GetClientDefault, config, groupID, topics)
 }
 
 func (k HadeKafka) GetClient(option ...contract.KafkaOption) (sarama.Client, error) {
@@ -35,6 +42,72 @@ func (k HadeKafka) GetClient(option ...contract.KafkaOption) (sarama.Client, err
 			return nil, err
 		}
 	}
+	return k.getClientByConfig(config)
+}
+
+// 内部方法：获取消费者组
+func (k HadeKafka) getConsumerGroup(
+	getClientFunc func() (sarama.Client, error),
+	config *contract.KafkaConfig,
+	groupID string,
+	topics []string) (sarama.ConsumerGroup, error) {
+
+	uniqKey := config.UniqKey() + "_" + groupID
+	k.lock.RLock()
+	if group, ok := k.consumerGroups[uniqKey]; ok {
+		k.lock.RUnlock()
+		return group, nil
+	}
+	k.lock.RUnlock()
+	client, err := getClientFunc()
+	if err != nil {
+		return nil, err
+	}
+	k.lock.Lock()
+	defer k.lock.Unlock()
+	consumerGroup, err := sarama.NewConsumerGroupFromClient(groupID, client)
+	if err != nil {
+		return nil, err
+	}
+	k.consumerGroups[uniqKey] = consumerGroup
+	return consumerGroup, nil
+}
+
+// 内部方法：获取消费者
+func (k HadeKafka) getConsumer(
+	getClientFunc func() (sarama.Client, error),
+	config *contract.KafkaConfig) (sarama.Consumer, error) {
+
+	uniqKey := config.UniqKey()
+	k.lock.RLock()
+	if consumer, ok := k.consumers[uniqKey]; ok {
+		k.lock.RUnlock()
+		return consumer, nil
+	}
+	k.lock.RUnlock()
+	client, err := getClientFunc()
+	if err != nil {
+		return nil, err
+	}
+	k.lock.Lock()
+	defer k.lock.Unlock()
+	consumer, err := sarama.NewConsumerFromClient(client)
+	if err != nil {
+		return nil, err
+	}
+	k.consumers[uniqKey] = consumer
+	return consumer, nil
+}
+func NewHadeKafka(params ...interface{}) (interface{}, error) {
+	hadeKafka := &HadeKafka{}
+	container := params[0]
+	hadeKafka.container = container.(framework.Container)
+	hadeKafka.clients = make(map[string]sarama.Client)
+	hadeKafka.lock = new(sync.RWMutex)
+	return hadeKafka, nil
+}
+
+func (k HadeKafka) getClientByConfig(config *contract.KafkaConfig) (sarama.Client, error) {
 	uniqKey := config.UniqKey()
 	// 判断是否已经实例化了kafka.Client
 	k.lock.RLock()
@@ -64,22 +137,63 @@ func (k HadeKafka) GetProducer(option ...contract.KafkaOption) (sarama.SyncProdu
 			return nil, err
 		}
 	}
-	uniqKey := config.UniqKey()
+	return k.getProducer(func() (sarama.Client, error) {
+		return k.GetClient(option...)
+	}, config)
+}
 
+func (k HadeKafka) GetProducerDefault() (sarama.SyncProducer, error) {
+	// 读取默认配置
+	config := GetBaseConfig(k.container)
+	return k.getProducer(k.GetClientDefault, config)
+}
+
+func (k HadeKafka) GetAsyncProducerDefault() (sarama.AsyncProducer, error) {
+	config := GetBaseConfig(k.container)
+	return k.getAsyncProducer(k.GetClientDefault, config)
+}
+
+// 内部方法：获取异步生产者
+func (k HadeKafka) getAsyncProducer(
+	getClientFunc func() (sarama.Client, error),
+	config *contract.KafkaConfig) (sarama.AsyncProducer, error) {
+
+	uniqKey := config.UniqKey()
+	k.lock.RLock()
+	if producer, ok := k.asyncProducers[uniqKey]; ok {
+		k.lock.RUnlock()
+		return producer, nil
+	}
+	k.lock.RUnlock()
+	client, err := getClientFunc()
+	if err != nil {
+		return nil, err
+	}
+	k.lock.Lock()
+	defer k.lock.Unlock()
+	asyncProducer, err := sarama.NewAsyncProducerFromClient(client)
+	if err != nil {
+		return nil, err
+	}
+	k.asyncProducers[uniqKey] = asyncProducer
+	return asyncProducer, nil
+}
+
+func (k HadeKafka) getProducer(
+	getClientFunc func() (sarama.Client, error), // 传入一个返回 sarama.Client 的函数
+	config *contract.KafkaConfig) (sarama.SyncProducer, error) {
+	uniqKey := config.UniqKey()
 	// 判断是否已经实例化了kafka.Client
 	k.lock.RLock()
 	if producer, ok := k.syncProducers[uniqKey]; ok {
 		k.lock.Lock()
 		return producer, nil
 	}
-
 	k.lock.RUnlock()
-
-	client, err := k.GetClient(option...)
+	client, err := getClientFunc()
 	if err != nil {
 		return nil, err
 	}
-
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	syncProducer, err := sarama.NewSyncProducerFromClient(client)
@@ -99,31 +213,9 @@ func (k HadeKafka) GetAsyncProducer(option ...contract.KafkaOption) (sarama.Asyn
 			return nil, err
 		}
 	}
-	uniqKey := config.UniqKey()
-
-	// 检查是否已实例化 asyncProducer
-	k.lock.RLock()
-	if producer, ok := k.asyncProducers[uniqKey]; ok {
-		k.lock.RUnlock()
-		return producer, nil
-	}
-	k.lock.RUnlock()
-
-	// 获取 client 实例
-	client, err := k.GetClient(option...)
-	if err != nil {
-		return nil, err
-	}
-
-	// 创建并保存 asyncProducer
-	k.lock.Lock()
-	defer k.lock.Unlock()
-	asyncProducer, err := sarama.NewAsyncProducerFromClient(client)
-	if err != nil {
-		return nil, err
-	}
-	k.asyncProducers[uniqKey] = asyncProducer
-	return asyncProducer, nil
+	return k.getAsyncProducer(func() (sarama.Client, error) {
+		return k.GetClient(option...)
+	}, config)
 }
 
 func (k HadeKafka) GetConsumer(option ...contract.KafkaOption) (sarama.Consumer, error) {
@@ -135,31 +227,9 @@ func (k HadeKafka) GetConsumer(option ...contract.KafkaOption) (sarama.Consumer,
 			return nil, err
 		}
 	}
-	uniqKey := config.UniqKey()
-
-	// 检查是否已实例化 consumer
-	k.lock.RLock()
-	if consumer, ok := k.consumers[uniqKey]; ok {
-		k.lock.RUnlock()
-		return consumer, nil
-	}
-	k.lock.RUnlock()
-
-	// 获取 client 实例
-	client, err := k.GetClient(option...)
-	if err != nil {
-		return nil, err
-	}
-
-	// 创建并保存 consumer
-	k.lock.Lock()
-	defer k.lock.Unlock()
-	consumer, err := sarama.NewConsumerFromClient(client)
-	if err != nil {
-		return nil, err
-	}
-	k.consumers[uniqKey] = consumer
-	return consumer, nil
+	return k.getConsumer(func() (sarama.Client, error) {
+		return k.GetClient(option...)
+	}, config)
 }
 
 func (k HadeKafka) GetConsumerGroup(groupID string, topics []string, option ...contract.KafkaOption) (sarama.ConsumerGroup, error) {
@@ -171,29 +241,9 @@ func (k HadeKafka) GetConsumerGroup(groupID string, topics []string, option ...c
 			return nil, err
 		}
 	}
-	uniqKey := config.UniqKey() + "_" + groupID
-
-	// 检查是否已实例化 consumerGroup
-	k.lock.RLock()
-	if group, ok := k.consumerGroups[uniqKey]; ok {
-		k.lock.RUnlock()
-		return group, nil
-	}
-	k.lock.RUnlock()
-
-	// 获取 client 实例
-	client, err := k.GetClient(option...)
-	if err != nil {
-		return nil, err
-	}
-
-	// 创建并保存 consumerGroup
-	k.lock.Lock()
-	defer k.lock.Unlock()
-	consumerGroup, err := sarama.NewConsumerGroupFromClient(groupID, client)
-	if err != nil {
-		return nil, err
-	}
-	k.consumerGroups[uniqKey] = consumerGroup
-	return consumerGroup, nil
+	return k.getConsumerGroup(
+		func() (sarama.Client, error) {
+			return k.GetClient(option...)
+		}, config, groupID, topics,
+	)
 }

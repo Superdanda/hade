@@ -27,6 +27,23 @@ func (s *UserService) SaveUser(ctx context.Context, user *User) error {
 	return nil
 }
 
+func (s *UserService) AddAmount(ctx context.Context, userID int64, amount int64) error {
+	// 使用kafka 来发布事件
+	return nil
+}
+
+//func (s *UserService) ChangeAmount(container  framework.Container, ctx *gin.Context) error {
+//	queueService := s.container.MustMake(contract.QueueKey).(contract.QueueService)
+//	queueService.SubscribeEvent(ctx,ChangeAmountTopic, )
+//}
+
+const ChangeAmountTopic = "UserAmountChange"
+
+type ChangeAmountEvent struct {
+	UserID int64 `json:"user_id"`
+	Amount int64 `json:"amount"`
+}
+
 func NewUserService(params ...interface{}) (interface{}, error) {
 	container := params[0].(framework.Container)
 	userService := &UserService{container: container}

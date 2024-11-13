@@ -14,6 +14,9 @@ type Service interface {
 
 	// SaveUser 保存用户信息
 	SaveUser(ctx context.Context, user *User) error
+
+	// AddAmount 金额变化
+	AddAmount(ctx context.Context, userID int64, amount int64) error
 }
 
 type User struct {
@@ -24,6 +27,13 @@ type User struct {
 	Password  string    `gorm:"column:password;type:varchar(255);comment:密码;not null" json:"password"`
 	Email     string    `gorm:"column:email;type:varchar(255);comment:邮箱;not null" json:"email"`
 	CreatedAt time.Time `gorm:"column:created_at;type:datetime;comment:创建时间;not null;<-:create" json:"createdAt"`
+	Account   Account   `gorm:"foreignkey:UserId;constraint:OnDelete:CASCADE" json:"account"`
+}
+
+type Account struct {
+	ID     int64 `gorm:"column:id;primary_key;auto_increment" json:"id"`
+	UserId int64 `gorm:"column:user_id;primary_key;auto_increment" json:"userId"`
+	Amount int64 `gorm:"column:amount;type:varchar(255)" json:"amount"`
 }
 
 func (u *User) MarshalBinary() ([]byte, error) {
