@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/contract"
 )
@@ -28,20 +29,37 @@ func (s *UserService) SaveUser(ctx context.Context, user *User) error {
 }
 
 func (s *UserService) AddAmount(ctx context.Context, userID int64, amount int64) error {
-	// 使用kafka 来发布事件
-	return nil
+	//  来发布事件
+	queueService := s.container.MustMake(contract.QueueKey).(contract.QueueService)
+	return queueService.NewEventAndPublish(ctx, ChangeAmountTopic, NewChangeAmountEvent(userID, amount))
 }
 
-//func (s *UserService) ChangeAmount(container  framework.Container, ctx *gin.Context) error {
-//	queueService := s.container.MustMake(contract.QueueKey).(contract.QueueService)
-//	queueService.SubscribeEvent(ctx,ChangeAmountTopic, )
-//}
-
-const ChangeAmountTopic = "UserAmountChange"
+func (s *UserService) ChangeAmount(ctx context.Context, payLoad interface{}) error {
+	amountEvent := &ChangeAmountEvent{}
+	json.Unmarshal([]byte(payLoad.(string)), &ChangeAmountEvent{})
+	user, err := s.GetUser(ctx, amountEvent.UserID)
+	if err != nil {
+		return err
+	}
+	if user.Account == nil {
+		user.Account = &Account{}
+	}
+	user.Account.Amount += amountEvent.Amount
+	return s.repository.Save(ctx, user)
+}
 
 type ChangeAmountEvent struct {
-	UserID int64 `json:"user_id"`
-	Amount int64 `json:"amount"`
+	Topic  string `json:"topic"`
+	UserID int64  `json:"user_id"`
+	Amount int64  `json:"amount"`
+}
+
+func NewChangeAmountEvent(userID int64, amount int64) *ChangeAmountEvent {
+	return &ChangeAmountEvent{
+		Topic:  ChangeAmountTopic,
+		UserID: userID,
+		Amount: amount,
+	}
 }
 
 func NewUserService(params ...interface{}) (interface{}, error) {

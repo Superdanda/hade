@@ -44,22 +44,38 @@ var appCommand = &cobra.Command{
 }
 
 // 启动AppServer, 这个函数会将当前goroutine阻塞
-func startAppServe(server *http.Server, c framework.Container) error {
-	// 这个goroutine是启动服务的goroutine
+func startAppServe(server *http.Server, c framework.Container, command *cobra.Command) error {
+	errChan := make(chan error, 1)
+
+	// 启动服务器
 	go func() {
-		server.ListenAndServe()
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
+		}
 	}()
 
-	// 当前的goroutine等待信号量
-	quit := make(chan os.Signal)
-	// 监控信号：SIGINT, SIGTERM, SIGQUIT
+	// 等待信号或错误
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	// 这里会阻塞当前goroutine等待信号
-	<-quit
 
-	// 调用Server.Shutdown graceful结束
-	closeWait := 5
 	configService := c.MustMake(contract.ConfigKey).(contract.Config)
+	if configService.GetBool("app.queue_subscribe") {
+		queueService := c.MustMake(contract.QueueKey).(contract.QueueService)
+		queueService.SetContext(command.Context())
+		queueService.ProcessSubscribe()
+	}
+
+	select {
+	case <-quit:
+		// 进行优雅关闭
+	case err := <-errChan:
+		// 处理服务器错误
+		return err
+	}
+
+	// 调用Server.Shutdown进行优雅关闭
+	closeWait := 5
+
 	if configService.IsExist("app.close_wait") {
 		closeWait = configService.GetInt("app.close_wait")
 	}
@@ -101,11 +117,6 @@ var appStartCommand = &cobra.Command{
 			Handler: core,
 			Addr:    appAddress,
 		}
-
-		// 这个goroutine是启动服务的goroutine
-		go func() {
-			server.ListenAndServe()
-		}()
 
 		appService := container.MustMake(contract.AppKey).(contract.App)
 
@@ -157,26 +168,28 @@ var appStartCommand = &cobra.Command{
 			}
 			defer cntxt.Release()
 			// 子进程执行真正的app启动操作
-			fmt.Println("deamon started")
-			//gspt.SetProcTitle("hade app")
-			if err := startAppServe(server, container); err != nil {
+			fmt.Println("daemon started")
+			// 设置进程名称，假设有这样的函数
+			// gspt.SetProcTitle("hade app")
+			if err := startAppServe(server, container, c); err != nil {
 				fmt.Println(err)
 			}
 			return nil
 		}
 
-		// 非deamon模式，直接执行
+		// 非daemon模式，直接执行
 		content := strconv.Itoa(os.Getpid())
 		fmt.Println("[PID]", content)
-		err := ioutil.WriteFile(serverPidFile, []byte(content), 0644)
+		err := os.WriteFile(serverPidFile, []byte(content), 0644)
 		if err != nil {
 			return err
 		}
-		//gspt.SetProcTitle("hade app")
+		// 设置进程名称，假设有这样的函数
+		// gspt.SetProcTitle("hade app")
 
 		fmt.Println("app serve url:", appAddress)
-		if err := startAppServe(server, container); err != nil {
-			fmt.Println(err)
+		if err := startAppServe(server, container, c); err != nil {
+			return err
 		}
 		return nil
 	},

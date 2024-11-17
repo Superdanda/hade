@@ -12,8 +12,28 @@ import (
 )
 
 type KafkaQueueService struct {
-	container    framework.Container
-	kafkaService contract.KafkaService
+	container          framework.Container
+	kafkaService       contract.KafkaService
+	RegisterSubscribed map[string][]contract.EventHandler
+	context            context.Context
+}
+
+// GetContext 为订阅设置上下文
+func (k *KafkaQueueService) GetContext() context.Context {
+	return k.context
+}
+
+func (k *KafkaQueueService) SetContext(ctx context.Context) {
+	k.context = ctx
+}
+
+func (k *KafkaQueueService) RegisterSubscribe(topic string, handler func(event contract.Event) error) error {
+	k.RegisterSubscribed[topic] = append(k.RegisterSubscribed[topic], handler)
+	return nil
+}
+
+func (k *KafkaQueueService) GetRegisterSubscribe(topic string) []contract.EventHandler {
+	return k.RegisterSubscribed[topic]
 }
 
 func NewKafkaQueueService(params ...interface{}) (interface{}, error) {
@@ -21,6 +41,7 @@ func NewKafkaQueueService(params ...interface{}) (interface{}, error) {
 	kafkaQueueService.container = params[0].(framework.Container)
 	kafkaService := kafkaQueueService.container.MustMake(contract.KafkaKey).(contract.KafkaService)
 	kafkaQueueService.kafkaService = kafkaService
+	kafkaQueueService.RegisterSubscribed = make(map[string][]contract.EventHandler)
 	return kafkaQueueService, nil
 }
 
@@ -43,6 +64,14 @@ func convertToMessage(e contract.Event) (*sarama.ProducerMessage, error) {
 		Value: sarama.StringEncoder(data), // 假设payload是字符串
 	}
 	return message, nil
+}
+
+func (k *KafkaQueueService) ProcessSubscribe() {
+	for topic, handlers := range k.RegisterSubscribed {
+		for _, handler := range handlers {
+			k.SubscribeEvent(k.context, topic, handler)
+		}
+	}
 }
 
 // GetEventKey 实现 EventID 方法

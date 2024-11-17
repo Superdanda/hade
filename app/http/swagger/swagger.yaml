@@ -1,11 +1,28 @@
 basePath: /
 definitions:
+  base.Result:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   demo.UserDTO:
     properties:
       id:
         type: integer
       name:
         type: string
+    type: object
+  user.ChangeAmountParam:
+    properties:
+      amount:
+        type: integer
+      user_id:
+        type: integer
     type: object
 info:
   contact:
@@ -50,6 +67,33 @@ paths:
       summary: 获取所有学生
       tags:
       - demo
+  /user/amount:
+    post:
+      consumes:
+      - application/json
+      description: 更改金额
+      operationId: ChangeAmount
+      parameters:
+      - description: 查询详情请求参数
+        in: body
+        name: ChangeAmountParam
+        required: true
+        schema:
+          $ref: '#/definitions/user.ChangeAmountParam'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回成功的流程定义数据
+          schema:
+            $ref: '#/definitions/base.Result'
+        "500":
+          description: 操作失败
+          schema:
+            $ref: '#/definitions/base.Result'
+      summary: 更改金额
+      tags:
+      - ChangeAmount
 securityDefinitions:
   ApiKeyAuth:
     in: header

@@ -27,11 +27,12 @@ func GetBaseConfig(c framework.Container) *contract.KafkaConfig {
 
 func WithConfigPath(configPath string) contract.KafkaOption {
 	return func(container framework.Container, config *contract.KafkaConfig) error {
+
 		configService := container.MustMake(contract.ConfigKey).(contract.Config)
-		baseConfigPath := configPath + ".base"
-		producerConfigPath := configPath + ".producer"
-		consumerConfigPath := configPath + ".consumer"
-		consumerGroupConfigPath := configPath + ".consumerGroup"
+		baseConfigPath := "kafka." + configPath + ".base"
+		producerConfigPath := "kafka." + configPath + ".producer"
+		consumerConfigPath := "kafka." + configPath + ".consumer"
+		consumerGroupConfigPath := "kafka." + configPath + ".consumerGroup"
 
 		baseConfMap := configService.GetStringMapString(baseConfigPath)
 		producerConfMap := configService.GetStringMapString(producerConfigPath)
@@ -41,7 +42,7 @@ func WithConfigPath(configPath string) contract.KafkaOption {
 		brokers := configService.GetStringSlice(baseConfigPath + ".brokers")
 		config.Brokers = brokers
 
-		saramaConfig := &sarama.Config{}
+		saramaConfig := sarama.NewConfig()
 
 		version, ok := baseConfMap["version"]
 		if ok {
@@ -120,6 +121,7 @@ func WithConfigPath(configPath string) contract.KafkaOption {
 		}
 
 		// 配置 Producer (生产者)
+
 		if requiredAcks, ok := producerConfMap["required_acks"]; ok {
 			if acks, err := strconv.Atoi(requiredAcks); err == nil {
 				saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(acks)

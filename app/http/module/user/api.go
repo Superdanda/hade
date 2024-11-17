@@ -25,6 +25,7 @@ func RegisterRoutes(r *gin.Engine) error {
 			userGroup.POST("/login", api.UserLogin)
 			userGroup.POST("/get", api.UserGet)
 			userGroup.POST("/save", api.UserSave)
+			userGroup.POST("/amount", api.ChangeAmount)
 		}
 	}
 

@@ -103,6 +103,10 @@ func NewHadeKafka(params ...interface{}) (interface{}, error) {
 	container := params[0]
 	hadeKafka.container = container.(framework.Container)
 	hadeKafka.clients = make(map[string]sarama.Client)
+	hadeKafka.syncProducers = make(map[string]sarama.SyncProducer)
+	hadeKafka.asyncProducers = make(map[string]sarama.AsyncProducer)
+	hadeKafka.consumers = make(map[string]sarama.Consumer)
+	hadeKafka.consumerGroups = make(map[string]sarama.ConsumerGroup)
 	hadeKafka.lock = new(sync.RWMutex)
 	return hadeKafka, nil
 }
@@ -184,18 +188,15 @@ func (k HadeKafka) getProducer(
 	config *contract.KafkaConfig) (sarama.SyncProducer, error) {
 	uniqKey := config.UniqKey()
 	// 判断是否已经实例化了kafka.Client
-	k.lock.RLock()
 	if producer, ok := k.syncProducers[uniqKey]; ok {
-		k.lock.Lock()
 		return producer, nil
 	}
-	k.lock.RUnlock()
 	client, err := getClientFunc()
 	if err != nil {
 		return nil, err
 	}
-	k.lock.Lock()
-	defer k.lock.Unlock()
+	k.lock.RLock()
+	defer k.lock.RUnlock()
 	syncProducer, err := sarama.NewSyncProducerFromClient(client)
 	if err != nil {
 		return nil, err

@@ -1,12 +1,14 @@
 url: http://127.0.0.1:8066
 
-name: github.com/Superdanda/hade
+name: hade
 
 swagger_open: true
 
 dev_fresh: 1
 
 swagger: true
+
+queue_subscribe: true  # 是否开启事件订阅
 
 dev: # 调试模式
   port: 8888 # 调试模式最终监听的端口，默认为8070

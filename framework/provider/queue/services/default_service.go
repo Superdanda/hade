@@ -14,11 +14,30 @@ import (
 )
 
 type MemoryQueueService struct {
-	container    framework.Container
-	subscribers  map[string][]func(event contract.Event) error
-	subscriberMu sync.RWMutex
-	eventStore   EventStore
-	eventQueue   chan contract.Event // 使用 channel 作为 FIFO 队列
+	container          framework.Container
+	subscribers        map[string][]func(event contract.Event) error
+	subscriberMu       sync.RWMutex
+	eventStore         EventStore
+	eventQueue         chan contract.Event // 使用 channel 作为 FIFO 队列
+	RegisterSubscribed map[string][]contract.EventHandler
+	context            context.Context
+}
+
+func (m *MemoryQueueService) SetContext(ctx context.Context) {
+	m.context = ctx
+}
+
+func (m *MemoryQueueService) ProcessSubscribe() {
+
+}
+
+func (m *MemoryQueueService) RegisterSubscribe(topic string, handler func(event contract.Event) error) error {
+	m.RegisterSubscribed[topic] = append(m.RegisterSubscribed[topic], handler)
+	return nil
+}
+
+func (m *MemoryQueueService) GetRegisterSubscribe(topic string) []contract.EventHandler {
+	return m.RegisterSubscribed[topic]
 }
 
 func (m *MemoryQueueService) NewEventAndPublish(ctx context.Context, topic string, payload interface{}) error {
@@ -42,7 +61,6 @@ func (m *MemoryQueueService) NewEventAndPublish(ctx context.Context, topic strin
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -62,6 +80,8 @@ func NewMemoryQueueService(params ...interface{}) (interface{}, error) {
 	memoryQueueService.eventStore = eventStore
 
 	go memoryQueueService.processEvents() // 启动事件处理协程
+
+	memoryQueueService.RegisterSubscribed = make(map[string][]contract.EventHandler)
 	return memoryQueueService, nil
 }
 

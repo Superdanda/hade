@@ -2,36 +2,40 @@ name: default
 
 default:
   base:
-    version: "2.5.0"         # Kafka 版本
-    brokers: [ "localhost:9092" ]  # Kafka broker 列表
-    Net_SASL_Enable: true         # 是否启用 SASL 认证
-    Net_SASL_User: "your_user"    # SASL 用户名
-    Net_SASL_Password: "your_password"  # SASL 密码
-    Net_TLS_Enable: false         # 是否启用 TLS，若为 true，需要进一步配置 TLS 证书信息
-    Net_TLS_Config_InsecureSkipVerify: true  # 是否跳过 TLS 证书验证（仅在 TLS 启用时配置）
+    version: "3.8.1"                 # kafka 版本
+    brokers: [ "127.0.0.1:9092" ]      # kafka broker 列表
+#    admin_timeout: 10s
+#    net_sasl_enable: false            # 是否启用 sasl 认证
+#    net_sasl_user: "admin"       # sasl 用户名
+#    net_sasl_password: "admin"  # sasl 密码
+#    net_tls_enable: false            # 是否启用 tls，若为 true，需要进一步配置 tls 证书信息
+#    net_tls_config_insecureskipverify: true  # 是否跳过 tls 证书验证（仅在 tls 启用时配置）
+#    net_max_open_requests: 10  # 限制 Kafka 客户端在等待服务器响应时可以同时发送的最大请求数量
+#    net_dial_timeout: 10s
+#    net_read_timeout: 10s
+#    net_write_timeout: 10s
 
   producer:
-    RequiredAcks: -1               # 生产者应答机制（-1 表示等待所有副本应答）
-    Retry_Max: 5                   # 最大重试次数
-    Return_Successes: true         # 是否返回成功发送确认
-    Partitioner: "random"          # 分区策略（"random", "roundrobin", "hash" 等）
-    Compression: "snappy"          # 消息压缩类型（"none", "gzip", "snappy", "lz4", "zstd"）
-    Flush_Frequency: 500ms         # 消息刷写频率
-    Flush_Messages: 10             # 每批次最大消息数
-    Flush_Bytes: 1024              # 每批次字节数
-
-  consumer:
-    Offsets_Initial: -2            # 初始偏移量（-2 表示从最早的偏移量开始消费）
-    Return_Errors: true            # 是否返回消费错误
-    Fetch_Default: 1048576         # 每次拉取消息的默认大小（1MB）
-    MaxWaitTime: 250ms             # 拉取消息的最大等待时间
-    MaxProcessingTime: 100ms       # 每条消息的最大处理时间
-
-  consumerGroup:
-    Group_Rebalance_Strategy: "roundrobin"  # 消费者组分区再平衡策略（roundrobin, range, sticky）
-    Group_Rebalance_Timeout: 60s            # 分区再平衡的超时时间
-    Group_Rebalance_Retry_Max: 4            # 再平衡的最大重试次数
-    Group_Heartbeat_Interval: 3s            # 消费者组心跳间隔
-    Offsets_Initial: -2                     # 初始偏移量（-2 表示从最早的偏移量开始消费）
-    Return_Errors: true                     # 是否返回消费错误
-
+#    requiredacks: -1                 # 生产者应答机制（-1 表示等待所有副本应答）
+#    retry_max: 5                     # 最大重试次数
+    return_successes: true           # 是否返回成功发送确认
+#    partitioner: "random"            # 分区策略（"random", "roundrobin", "hash" 等）
+#    compression: "snappy"            # 消息压缩类型（"none", "gzip", "snappy", "lz4", "zstd"）
+#    flush_frequency: 500ms           # 消息刷写频率
+#    flush_messages: 10               # 每批次最大消息数
+#    flush_bytes: 1024                # 每批次字节数
+#
+#  consumer:
+#    offsets_initial: -2              # 初始偏移量（-2 表示从最早的偏移量开始消费）
+#    return_errors: true              # 是否返回消费错误
+#    fetch_default: 1048576           # 每次拉取消息的默认大小（1mb）
+#    maxwaittime: 250ms               # 拉取消息的最大等待时间
+#    maxprocessingtime: 100ms         # 每条消息的最大处理时间
+#
+#  consumergroup:
+#    group_rebalance_strategy: "roundrobin"  # 消费者组分区再平衡策略（roundrobin, range, sticky）
+#    group_rebalance_timeout: 60s            # 分区再平衡的超时时间
+#    group_rebalance_retry_max: 4            # 再平衡的最大重试次数
+#    group_heartbeat_interval: 3s            # 消费者组心跳间隔
+#    offsets_initial: -2                     # 初始偏移量（-2 表示从最早的偏移量开始消费）
+#    return_errors: true                     # 是否返回消费错误

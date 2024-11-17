@@ -11,8 +11,17 @@ type QueueService interface {
 	// SubscribeEvent 订阅事件
 	SubscribeEvent(ctx context.Context, topic string, handler func(event Event) error) error
 
+	// ProcessSubscribe 执行订阅
+	ProcessSubscribe()
+
+	// RegisterSubscribe 注册订阅 订阅事件
+	RegisterSubscribe(topic string, handler func(event Event) error) error
+
 	// ReplayEvents 从指定的时间点或事件ID开始重放事件
 	ReplayEvents(ctx context.Context, topic string, fromID string, fromTimestamp int64, handler func(event Event) error) error
+
+	// GetRegisterSubscribe 根据主题获取已经注册的订阅
+	GetRegisterSubscribe(topic string) []EventHandler
 
 	// GetEventById 根据事件ID获取事件
 	GetEventById(ctx context.Context, topic string, eventID string) (Event, error)
@@ -25,7 +34,15 @@ type QueueService interface {
 
 	// NewEventAndPublish 创建并推送事件方法
 	NewEventAndPublish(ctx context.Context, topic string, payload interface{}) error
+
+	// SetContext 为订阅设置上下文
+	SetContext(ctx context.Context)
+
+	// GetContext 为订阅设置上下文
+	GetContext() context.Context
 }
+
+type EventHandler func(event Event) error
 
 type Event interface {
 	GetEventKey() string   // 事件唯一标识
