@@ -24,7 +24,7 @@ local:
   dsn: "" # dsn，如果设置了dsn, 以下的所有设置都不生效
   host: 127.0.0.1 # ip地址
   port: 3306 # 端口
-  database: bbs # 数据库
+  database: demo # 数据库
   username: root # 用户名
   password: "123456" # 密码
   charset: utf8mb4 # 字符集

@@ -21,7 +21,7 @@ func (d DatabaseConnectService) AliDataBaseConnect() *gorm.DB {
 }
 
 func (d DatabaseConnectService) DefaultDatabaseConnect() *gorm.DB {
-	return getDatabaseConnectByYaml("database.ali", d)
+	return getDatabaseConnectByYaml("database.local", d)
 }
 
 func NewDatabaseConnectService(params ...interface{}) (interface{}, error) {

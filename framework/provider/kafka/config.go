@@ -154,6 +154,9 @@ func WithConfigPath(configPath string) contract.KafkaOption {
 		}
 
 		// 配置 Consumer (消费者)
+		saramaConfig.Consumer.Offsets.AutoCommit.Enable = true
+		saramaConfig.Consumer.Offsets.AutoCommit.Interval = 1 * time.Second
+		//saramaConfig.Consumer.Group.Session.Timeout = 1 * time.Second
 		if offsetsInitial, ok := consumerConfMap["offsets_initial"]; ok {
 			if initial, err := strconv.Atoi(offsetsInitial); err == nil {
 				saramaConfig.Consumer.Offsets.Initial = int64(initial)

@@ -36,7 +36,7 @@ func (s *UserService) AddAmount(ctx context.Context, userID int64, amount int64)
 
 func (s *UserService) ChangeAmount(ctx context.Context, payLoad interface{}) error {
 	amountEvent := &ChangeAmountEvent{}
-	json.Unmarshal([]byte(payLoad.(string)), &ChangeAmountEvent{})
+	json.Unmarshal([]byte(payLoad.(string)), amountEvent)
 	user, err := s.GetUser(ctx, amountEvent.UserID)
 	if err != nil {
 		return err

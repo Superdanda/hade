@@ -53,11 +53,12 @@ type KafkaEvent struct {
 }
 
 func convertToMessage(e contract.Event) (*sarama.ProducerMessage, error) {
-	data, err := json.Marshal(e)
+	_, err := json.Marshal(e)
 	if err != nil {
 		return nil, err
 	}
 	// 创建Kafka消息
+	data, err := json.Marshal(e.Payload())
 	message := &sarama.ProducerMessage{
 		Topic: e.EventTopic(),
 		Key:   sarama.StringEncoder(e.GetEventKey()),

@@ -21,8 +21,8 @@ default:
     return_successes: true           # 是否返回成功发送确认
 #    partitioner: "random"            # 分区策略（"random", "roundrobin", "hash" 等）
 #    compression: "snappy"            # 消息压缩类型（"none", "gzip", "snappy", "lz4", "zstd"）
-#    flush_frequency: 500ms           # 消息刷写频率
-#    flush_messages: 10               # 每批次最大消息数
+    flush_frequency: 500ms           # 消息刷写频率
+    flush_messages: 10               # 每批次最大消息数
 #    flush_bytes: 1024                # 每批次字节数
 #
 #  consumer:

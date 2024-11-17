@@ -30,6 +30,7 @@ func (api *UserApi) ChangeAmount(context *gin.Context) {
 	userService := context.MustMake(user.UserKey).(user.Service)
 	err := userService.AddAmount(context, param.UserId, param.Amount)
 	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"code": 0, "data": nil})
 		return
 	}
 	context.JSON(http.StatusOK, gin.H{"code": 0, "data": nil})
