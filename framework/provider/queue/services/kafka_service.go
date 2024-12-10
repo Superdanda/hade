@@ -46,10 +46,33 @@ func NewKafkaQueueService(params ...interface{}) (interface{}, error) {
 }
 
 type KafkaEvent struct {
-	EventKey  string      // 事件唯一标识
-	Topic     string      // 事件主题
-	Timestamp int64       // 事件时间戳
-	Data      interface{} // 事件负载
+	EventKey  string      `json:"eventKey"`  // 事件唯一标识
+	Topic     string      `json:"topic"`     // 事件主题
+	Timestamp int64       `json:"timestamp"` // 事件时间戳
+	Source    string      `json:"source"`
+	Payload   interface{} `json:"payload"` // 事件负载
+}
+
+func NewKafkaEvent(topic, source string, payload interface{}) *KafkaEvent {
+	return &KafkaEvent{
+		EventKey:  uuid.New().String(), // 使用 UUID 作为事件 ID
+		Topic:     topic,
+		Timestamp: time.Now().Unix(),
+		Source:    source,
+		Payload:   payload,
+	}
+}
+
+func NewKafkaEventByMsg(msgValue string) *KafkaEvent {
+	// 定义一个 KafkaEvent 对象
+	kafkaEvent := &KafkaEvent{}
+	// 使用 json.Unmarshal 将 JSON 字符串解析为 KafkaEvent 对象
+	err := json.Unmarshal([]byte(msgValue), kafkaEvent)
+	if err != nil {
+		return nil
+	}
+	// 返回 KafkaEvent 对象
+	return kafkaEvent
 }
 
 func convertToMessage(e contract.Event) (*sarama.ProducerMessage, error) {
@@ -58,7 +81,7 @@ func convertToMessage(e contract.Event) (*sarama.ProducerMessage, error) {
 		return nil, err
 	}
 	// 创建Kafka消息
-	data, err := json.Marshal(e.Payload())
+	data, err := json.Marshal(e)
 	message := &sarama.ProducerMessage{
 		Topic: e.EventTopic(),
 		Key:   sarama.StringEncoder(e.GetEventKey()),
@@ -90,9 +113,22 @@ func (e *KafkaEvent) EventTimestamp() int64 {
 	return e.Timestamp
 }
 
-// Payload 实现 Payload 方法
-func (e *KafkaEvent) Payload() interface{} {
-	return e.Data
+// EventPayload 实现 EventPayload 方法
+func (e *KafkaEvent) EventPayload() interface{} {
+	return e.Payload
+}
+
+// EventSource 实现 EventSource 方法
+func (e *KafkaEvent) EventSource() string {
+	return e.Source
+}
+
+func (e *KafkaEvent) MarshalBinary() ([]byte, error) {
+	return json.Marshal(e)
+}
+
+func (e *KafkaEvent) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, e)
 }
 
 func (k KafkaQueueService) PublishEvent(ctx context.Context, event contract.Event) error {
@@ -123,12 +159,7 @@ func (k KafkaQueueService) SubscribeEvent(ctx context.Context, topic string, han
 		for {
 			select {
 			case msg := <-partitionConsumer.Messages():
-				event := &KafkaEvent{
-					EventKey:  string(msg.Key),
-					Topic:     msg.Topic,
-					Timestamp: time.Now().Unix(),
-					Data:      string(msg.Value),
-				}
+				event := NewKafkaEventByMsg(string(msg.Value))
 				handler(event)
 			case <-ctx.Done():
 				return
@@ -160,12 +191,7 @@ func (k KafkaQueueService) ReplayEvents(ctx context.Context, topic string, fromI
 		for {
 			select {
 			case msg := <-partitionConsumer.Messages():
-				event := &KafkaEvent{
-					EventKey:  string(msg.Key),
-					Topic:     msg.Topic,
-					Timestamp: time.Now().Unix(),
-					Data:      string(msg.Value),
-				}
+				event := NewKafkaEventByMsg(string(msg.Value))
 				handler(event)
 			case <-ctx.Done():
 				return
@@ -190,12 +216,7 @@ func (k KafkaQueueService) GetEventById(ctx context.Context, topic string, event
 	go func() {
 		for msg := range partitionConsumer.Messages() {
 			if string(msg.Key) == eventID {
-				result = &KafkaEvent{
-					EventKey:  string(msg.Key),
-					Topic:     msg.Topic,
-					Timestamp: time.Now().Unix(),
-					Data:      string(msg.Value),
-				}
+				result = NewKafkaEventByMsg(string(msg.Value))
 				break
 			}
 		}
@@ -227,12 +248,7 @@ func (k KafkaQueueService) GetEventByTime(ctx context.Context, topic string, fro
 		for msg := range partitionConsumer.Messages() {
 			// 假设消息的时间戳存在Data字段中，进行时间戳筛选
 			if msg.Timestamp.Unix() >= fromTimestamp {
-				result = &KafkaEvent{
-					EventKey:  string(msg.Key),
-					Topic:     msg.Topic,
-					Timestamp: msg.Timestamp.Unix(),
-					Data:      string(msg.Value),
-				}
+				result = NewKafkaEventByMsg(string(msg.Value))
 				break
 			}
 		}
@@ -259,11 +275,6 @@ func (k KafkaQueueService) Close() error {
 
 func (k KafkaQueueService) NewEventAndPublish(ctx context.Context, topic string, payload interface{}) error {
 	// 生成新的事件
-	event := &KafkaEvent{
-		EventKey:  uuid.New().String(), // 使用 UUID 作为事件 ID
-		Topic:     topic,
-		Timestamp: time.Now().Unix(),
-		Data:      payload,
-	}
+	event := NewKafkaEvent(topic, "框架服务", payload)
 	return k.PublishEvent(ctx, event)
 }

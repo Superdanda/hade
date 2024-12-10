@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"encoding/json"
+	"github.com/Superdanda/hade/framework/contract"
 	"time"
 )
 
@@ -21,7 +22,7 @@ type Service interface {
 	AddAmount(ctx context.Context, userID int64, amount int64) error
 
 	// ChangeAmount 订阅ChangeAmountTopic事件
-	ChangeAmount(ctx context.Context, payLoad interface{}) error
+	ChangeAmount(ctx context.Context, event contract.Event) error
 }
 
 type User struct {

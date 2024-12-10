@@ -11,7 +11,7 @@ func SubscribeEvent(container framework.Container) error {
 	userService := container.MustMake(user.UserKey).(user.Service)
 
 	queueService.RegisterSubscribe(user.ChangeAmountTopic, func(event contract.Event) error {
-		return userService.ChangeAmount(queueService.GetContext(), event.Payload())
+		return userService.ChangeAmount(queueService.GetContext(), event)
 	})
 
 	return nil

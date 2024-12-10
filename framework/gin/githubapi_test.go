@@ -84,7 +84,7 @@ var githubAPI = []route{
 	{http.MethodPost, "/gists/:id/forks"},
 	{http.MethodDelete, "/gists/:id"},
 
-	// Git Data
+	// Git EventPayload
 	{http.MethodGet, "/repos/:owner/:repo/git/blobs/:sha"},
 	{http.MethodPost, "/repos/:owner/:repo/git/blobs"},
 	{http.MethodGet, "/repos/:owner/:repo/git/commits/:sha"},

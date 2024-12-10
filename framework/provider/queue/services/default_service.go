@@ -175,7 +175,8 @@ type DefaultBaseEvent struct {
 	EventKey  string    `gorm:"type:varchar(255);not null" json:"event_key"`
 	Topic     string    `gorm:"type:varchar(50);not null" json:"topic"`
 	Timestamp int64     `gorm:"autoCreateTime:milli" json:"timestamp"`
-	Data      string    `gorm:"type:json" json:"data"` // 将数据存储为 JSON 格式
+	Data      string    `gorm:"type:json" json:"data"`   // 将数据存储为 JSON 格式
+	Source    string    `gorm:"type:json" json:"source"` // 将数据存储为 JSON 格式
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 
@@ -195,7 +196,12 @@ func (d *DefaultBaseEvent) EventTimestamp() int64 {
 	return d.Timestamp
 }
 
-func (d *DefaultBaseEvent) Payload() interface{} {
+// EventSource 实现 EventSource 方法
+func (d *DefaultBaseEvent) EventSource() string {
+	return d.Source
+}
+
+func (d *DefaultBaseEvent) EventPayload() interface{} {
 	var data interface{}
 	if err := json.Unmarshal([]byte(d.Data), &data); err != nil {
 		// 处理反序列化错误
@@ -223,8 +229,8 @@ func (s *GormEventStore) SaveEvent(ctx context.Context, event contract.Event) er
 		Topic:     event.EventTopic(),
 		Timestamp: event.EventTimestamp(),
 	}
-	// 将 Payload 序列化为 JSON
-	dataBytes, err := json.Marshal(event.Payload())
+	// 将 EventPayload 序列化为 JSON
+	dataBytes, err := json.Marshal(event.EventPayload())
 	if err != nil {
 		return err
 	}

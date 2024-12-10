@@ -963,7 +963,7 @@ func TestContextRenderData(t *testing.T) {
 	assert.Equal(t, "text/csv", w.Header().Get("Content-Type"))
 }
 
-// Tests that no Custom Data is rendered if code is 204
+// Tests that no Custom EventPayload is rendered if code is 204
 func TestContextRenderNoContentData(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)

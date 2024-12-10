@@ -34,9 +34,11 @@ func (s *UserService) AddAmount(ctx context.Context, userID int64, amount int64)
 	return queueService.NewEventAndPublish(ctx, ChangeAmountTopic, NewChangeAmountEvent(userID, amount))
 }
 
-func (s *UserService) ChangeAmount(ctx context.Context, payLoad interface{}) error {
-	amountEvent := &ChangeAmountEvent{}
-	json.Unmarshal([]byte(payLoad.(string)), amountEvent)
+func (s *UserService) ChangeAmount(ctx context.Context, event contract.Event) error {
+	amountEvent, err := contract.GetPayload[ChangeAmountEvent](event)
+	if err != nil {
+		return err
+	}
 	user, err := s.GetUser(ctx, amountEvent.UserID)
 	if err != nil {
 		return err
@@ -52,6 +54,14 @@ type ChangeAmountEvent struct {
 	Topic  string `json:"topic"`
 	UserID int64  `json:"user_id"`
 	Amount int64  `json:"amount"`
+}
+
+func (e *ChangeAmountEvent) MarshalBinary() ([]byte, error) {
+	return json.Marshal(e)
+}
+
+func (e *ChangeAmountEvent) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, e)
 }
 
 func NewChangeAmountEvent(userID int64, amount int64) *ChangeAmountEvent {

@@ -1,6 +1,10 @@
 package contract
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+)
 
 const QueueKey = "hade:queue"
 
@@ -45,8 +49,27 @@ type QueueService interface {
 type EventHandler func(event Event) error
 
 type Event interface {
-	GetEventKey() string   // 事件唯一标识
-	EventTopic() string    // 事件类型
-	EventTimestamp() int64 // 事件发生时间
-	Payload() interface{}  // 事件负载
+	GetEventKey() string       // 事件唯一标识
+	EventTopic() string        // 事件类型
+	EventTimestamp() int64     // 事件发生时间
+	EventPayload() interface{} // 事件负载
+	EventSource() string
+}
+
+// GetPayload 泛型方法，用于解析 Payload
+func GetPayload[T any](event Event) (T, error) {
+	// 定义一个零值变量
+	var result T
+	// 将 Payload 转为 JSON 字符串
+	payload := event.EventPayload()
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return result, fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	// 将 JSON 字符串解析为目标类型
+	err = json.Unmarshal(payloadBytes, &result)
+	if err != nil {
+		return result, fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+	return result, nil
 }
