@@ -7,15 +7,19 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/Superdanda/hade/framework"
 	"github.com/Superdanda/hade/framework/contract"
+	"github.com/Superdanda/hade/framework/provider/queue/queue_base"
 	"github.com/google/uuid"
+	"log"
 	"time"
 )
 
 type KafkaQueueService struct {
-	container          framework.Container
-	kafkaService       contract.KafkaService
-	RegisterSubscribed map[string][]contract.EventHandler
-	context            context.Context
+	container                     framework.Container
+	kafkaService                  contract.KafkaService
+	RegisterSubscribed            map[string][]contract.EventHandler
+	RegisterSubscribedWithContext map[string][]contract.EventHandlerWithContext
+	context                       context.Context
+	log                           log.Logger
 }
 
 // GetContext 为订阅设置上下文
@@ -29,6 +33,11 @@ func (k *KafkaQueueService) SetContext(ctx context.Context) {
 
 func (k *KafkaQueueService) RegisterSubscribe(topic string, handler func(event contract.Event) error) error {
 	k.RegisterSubscribed[topic] = append(k.RegisterSubscribed[topic], handler)
+	return nil
+}
+
+func (k *KafkaQueueService) RegisterSubscribeWithContext(topic string, handler contract.EventHandlerWithContext) error {
+	k.RegisterSubscribedWithContext[topic] = append(k.RegisterSubscribedWithContext[topic], handler)
 	return nil
 }
 
@@ -46,11 +55,12 @@ func NewKafkaQueueService(params ...interface{}) (interface{}, error) {
 }
 
 type KafkaEvent struct {
-	EventKey  string      `json:"eventKey"`  // 事件唯一标识
-	Topic     string      `json:"topic"`     // 事件主题
-	Timestamp int64       `json:"timestamp"` // 事件时间戳
-	Source    string      `json:"source"`
-	Payload   interface{} `json:"payload"` // 事件负载
+	EventKey    string                  `json:"eventKey"`  // 事件唯一标识
+	Topic       string                  `json:"topic"`     // 事件主题
+	Timestamp   int64                   `json:"timestamp"` // 事件时间戳
+	Source      string                  `json:"source"`
+	Payload     interface{}             `json:"payload"` // 事件负载
+	AuthSession *queue_base.AuthSession `json:"authSession"`
 }
 
 func NewKafkaEvent(topic, source string, payload interface{}) *KafkaEvent {
@@ -96,6 +106,12 @@ func (k *KafkaQueueService) ProcessSubscribe() {
 			k.SubscribeEvent(k.context, topic, handler)
 		}
 	}
+
+	for topic, contextHandlers := range k.RegisterSubscribedWithContext {
+		for _, contextHandler := range contextHandlers {
+			k.SubscribeEventWithContext(k.context, topic, contextHandler)
+		}
+	}
 }
 
 // GetEventKey 实现 EventID 方法
@@ -121,6 +137,10 @@ func (e *KafkaEvent) EventPayload() interface{} {
 // EventSource 实现 EventSource 方法
 func (e *KafkaEvent) EventSource() string {
 	return e.Source
+}
+
+func (e *KafkaEvent) Create() queue_base.AuthIdentity {
+	return e.AuthSession
 }
 
 func (e *KafkaEvent) MarshalBinary() ([]byte, error) {
@@ -162,6 +182,42 @@ func (k KafkaQueueService) SubscribeEvent(ctx context.Context, topic string, han
 				event := NewKafkaEventByMsg(string(msg.Value))
 				handler(event)
 			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return nil
+}
+
+func (k KafkaQueueService) SubscribeEventWithContext(ctx context.Context, topic string, handler contract.EventHandlerWithContext) error {
+	consumer, err := k.kafkaService.GetConsumer()
+	if err != nil {
+		return err
+	}
+	partitionConsumer, err := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			select {
+			case msg := <-partitionConsumer.Messages():
+				event := NewKafkaEventByMsg(string(msg.Value))
+				// ✅ 创建上下文（包含身份 + 容器 + 父上下文）
+				mqCtx := queue_base.NewContext(ctx, k.container, event.Create())
+
+				// ✅ 可选设置链路字段
+				mqCtx.WithValue("topic", topic)
+				mqCtx.WithValue("kafka.offset", msg.Offset)
+
+				// ✅ 执行处理逻辑
+				if err := handler(mqCtx, event); err != nil {
+					// TODO：日志记录、错误告警
+					k.log.Print(err.Error())
+				}
+			case <-ctx.Done():
+				k.log.Print("Kafka 消费协程退出：接收到 Done 信号")
 				return
 			}
 		}

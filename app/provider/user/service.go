@@ -75,9 +75,9 @@ func NewChangeAmountEvent(userID int64, amount int64) *ChangeAmountEvent {
 func NewUserService(params ...interface{}) (interface{}, error) {
 	container := params[0].(framework.Container)
 	userService := &UserService{container: container}
-	infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
-	ormRepository := infrastructureService.GetModuleOrmRepository(UserKey).(Repository)
-	userService.repository = ormRepository
+	//infrastructureService := container.MustMake(contract.InfrastructureKey).(contract.InfrastructureService)
+	//ormRepository := infrastructureService.GetModuleOrmRepository(UserKey).(Repository)
+	//userService.repository = ormRepository
 	return userService, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Superdanda/hade/framework/provider/queue/queue_base"
 )
 
 const QueueKey = "hade:queue"
@@ -20,6 +21,8 @@ type QueueService interface {
 
 	// RegisterSubscribe 注册订阅 订阅事件
 	RegisterSubscribe(topic string, handler func(event Event) error) error
+
+	RegisterSubscribeWithContext(topic string, handler EventHandlerWithContext) error
 
 	// ReplayEvents 从指定的时间点或事件ID开始重放事件
 	ReplayEvents(ctx context.Context, topic string, fromID string, fromTimestamp int64, handler func(event Event) error) error
@@ -48,12 +51,15 @@ type QueueService interface {
 
 type EventHandler func(event Event) error
 
+type EventHandlerWithContext func(context *queue_base.Context, event Event) error
+
 type Event interface {
 	GetEventKey() string       // 事件唯一标识
 	EventTopic() string        // 事件类型
 	EventTimestamp() int64     // 事件发生时间
 	EventPayload() interface{} // 事件负载
 	EventSource() string
+	Create() queue_base.AuthIdentity
 }
 
 // GetPayload 泛型方法，用于解析 Payload
